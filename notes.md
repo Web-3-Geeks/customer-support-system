@@ -39,7 +39,7 @@
 - [ ] Production admin ka password strong karna
 
 ## Closing
-- [ ] Lint + build
-- [ ] Audit (a11y, edge cases)
-- [ ] README
-- [ ] week7/Day1 snapshot + commits + push
+- [x] Lint + build
+- [x] Audit (a11y, edge cases)
+- [x] README
+- [x] week7/Day1 snapshot + commits + push
