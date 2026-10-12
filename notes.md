@@ -26,11 +26,17 @@
 - [x] RBAC tests (restricted routes par error)
 
 ## Frontend
-- [ ] Vite + Tailwind scaffold
-- [ ] Axios instance + AuthContext
-- [ ] Login aur Register pages
-- [ ] ProtectedRoute aur RoleRoute
-- [ ] Customer, Agent, Admin dashboards
+- [x] Vite + Tailwind scaffold
+- [x] Axios instance + AuthContext
+- [x] Login aur Register pages
+- [x] ProtectedRoute aur RoleRoute
+- [x] Customer, Agent, Admin dashboards
+
+## Deploy
+- [x] Backend Railway par deploy (health-check OK)
+- [ ] Frontend Vercel par deploy
+- [ ] Railway CLIENT_URL ko Vercel URL par set karna
+- [ ] Production admin ka password strong karna
 
 ## Closing
 - [ ] Lint + build

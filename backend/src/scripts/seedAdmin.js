@@ -6,6 +6,8 @@ const connectDB = require("../config/db");
 const User = require("../models/User");
 const { ROLES } = require("../utils/constants");
 
+const RESET_PASSWORD = process.argv.includes("--reset-password");
+
 const seedAdmin = async () => {
   const { ADMIN_NAME, ADMIN_EMAIL, ADMIN_PASSWORD } = process.env;
 
@@ -20,8 +22,15 @@ const seedAdmin = async () => {
 
   if (existing) {
     existing.role = ROLES.ADMIN;
+    if (RESET_PASSWORD) {
+      existing.password = await bcrypt.hash(ADMIN_PASSWORD, 12);
+    }
     await existing.save();
-    console.log(`Existing user ${email} promoted to ADMIN`);
+    console.log(
+      RESET_PASSWORD
+        ? `Existing user ${email} set to ADMIN and password reset`
+        : `Existing user ${email} promoted to ADMIN`
+    );
   } else {
     const password = await bcrypt.hash(ADMIN_PASSWORD, 12);
     await User.create({
