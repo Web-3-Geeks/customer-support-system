@@ -1,19 +1,20 @@
 import { HomeIcon, PlusIcon, SettingsIcon, TicketIcon, UsersIcon } from "../components/icons";
 
-// `soon: true` items are placeholders for the ticketing features arriving in the next days.
+// `soon: true` items are placeholders for features that are not built yet.
+// `end: true` makes the link active only on its exact path, not on nested pages.
 export const NAV_ITEMS = {
   CUSTOMER: [
-    { label: "Dashboard", to: "/customer", icon: HomeIcon },
-    { label: "My Tickets", icon: TicketIcon, soon: true },
-    { label: "New Ticket", icon: PlusIcon, soon: true },
+    { label: "Dashboard", to: "/customer", icon: HomeIcon, end: true },
+    { label: "My Tickets", to: "/customer/tickets", icon: TicketIcon },
+    { label: "New Ticket", to: "/customer/new-ticket", icon: PlusIcon },
   ],
   AGENT: [
-    { label: "Dashboard", to: "/agent", icon: HomeIcon },
-    { label: "Assigned Tickets", icon: TicketIcon, soon: true },
+    { label: "Dashboard", to: "/agent", icon: HomeIcon, end: true },
+    { label: "Assigned Tickets", to: "/agent/tickets", icon: TicketIcon },
   ],
   ADMIN: [
-    { label: "Users", to: "/admin", icon: UsersIcon },
-    { label: "Tickets", icon: TicketIcon, soon: true },
+    { label: "Users", to: "/admin", icon: UsersIcon, end: true },
+    { label: "Tickets", to: "/admin/tickets", icon: TicketIcon },
     { label: "Settings", icon: SettingsIcon, soon: true },
   ],
 };

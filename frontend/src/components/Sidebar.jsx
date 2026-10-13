@@ -24,11 +24,12 @@ function Sidebar({ user, onLogout, onClose }) {
       </div>
 
       <nav aria-label="Main" className="flex-1 space-y-1">
-        {items.map(({ label, to, icon: Icon, soon }) =>
+        {items.map(({ label, to, icon: Icon, soon, end }) =>
           to ? (
             <NavLink
               key={label}
               to={to}
+              end={end}
               onClick={onClose}
               className={({ isActive }) =>
                 `${itemBase} ${

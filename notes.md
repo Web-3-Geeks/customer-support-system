@@ -36,7 +36,7 @@
 - [x] Backend Railway par deploy (health-check OK)
 - [x] Frontend Vercel par deploy
 - [x] Railway CLIENT_URL ko Vercel URL par set karna
-- [ ] Production admin ka password strong karna
+- [x] Production admin ka password strong karna
 
 ## Closing
 - [x] Lint + build
@@ -86,15 +86,15 @@
 - [x] Search/filter/pagination tests
 
 ## Frontend
-- [ ] ticketApi + shared components (StatusBadge, PriorityBadge, Pagination, TicketFilters, TicketTable)
-- [ ] Customer: My Tickets list, New Ticket form, Ticket detail (edit/close)
-- [ ] Agent: Assigned Tickets list, Ticket detail (status/priority/resolve)
-- [ ] Admin: All Tickets list, assign/reassign dropdown
-- [ ] Sidebar ke "Soon" items active, dashboards par real counts
+- [x] ticketApi + shared components (StatusBadge, PriorityBadge, Pagination, TicketFilters, TicketTable)
+- [x] Customer: My Tickets list, New Ticket form, Ticket detail (edit/close)
+- [x] Agent: Assigned Tickets list, Ticket detail (status/priority/resolve)
+- [x] Admin: All Tickets list, assign/reassign dropdown
+- [x] Sidebar ke "Soon" items active, dashboards par real counts
 
 ## Closing
-- [ ] Lint + build + tests (backend + frontend)
+- [x] Lint + build + tests (backend + frontend)
 - [ ] Audit (a11y, edge cases, empty states)
-- [ ] README mein Day 2 section
+- [x] README mein Day 2 section
 - [ ] Deploy check (Railway + Vercel)
 - [ ] week7/Day2 snapshot + commits + push

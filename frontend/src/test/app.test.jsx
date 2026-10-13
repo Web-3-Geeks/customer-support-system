@@ -6,6 +6,7 @@ import App from "../App";
 import { AuthProvider } from "../context/AuthContext";
 import { authApi } from "../api/authApi";
 import { adminApi } from "../api/adminApi";
+import { ticketApi } from "../api/ticketApi";
 import { tokenStorage } from "../api/tokenStorage";
 
 vi.mock("../api/authApi", () => ({
@@ -13,6 +14,9 @@ vi.mock("../api/authApi", () => ({
 }));
 vi.mock("../api/adminApi", () => ({
   adminApi: { getUsers: vi.fn(), updateUserRole: vi.fn() },
+}));
+vi.mock("../api/ticketApi", () => ({
+  ticketApi: { list: vi.fn(), get: vi.fn(), create: vi.fn(), update: vi.fn(), changeStatus: vi.fn() },
 }));
 
 const customer = { _id: "1", name: "Ali Khan", email: "ali@test.com", role: "CUSTOMER" };
@@ -34,6 +38,9 @@ const sessionAs = (user) => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  ticketApi.list.mockResolvedValue({
+    data: { data: { tickets: [] }, pagination: { page: 1, limit: 10, total: 0, pages: 0 } },
+  });
 });
 
 describe("route protection", () => {
