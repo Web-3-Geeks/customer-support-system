@@ -17,7 +17,7 @@ function Textarea({ label, error, className = "", ...props }) {
           rows={6}
           aria-invalid={error ? "true" : "false"}
           aria-describedby={error ? `${id}-error` : undefined}
-          className={`w-full resize-y rounded-xl border bg-white px-4 py-3 text-sm text-ink placeholder:text-slate-400 focus:border-coral-500 focus:outline-none focus:ring-2 focus:ring-coral-500/20 ${
+          className={`w-full resize-y rounded-xl border bg-white px-4 py-3 text-sm text-ink placeholder:text-slate-500 focus:border-coral-500 focus:outline-none focus:ring-2 focus:ring-coral-500/20 ${
             error ? "border-red-400" : "border-line"
           }`}
           {...props}

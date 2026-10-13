@@ -7,6 +7,7 @@ import Alert from "../components/Alert";
 import { useAuth } from "../context/useAuth";
 import { getErrorMessage } from "../utils/getErrorMessage";
 import { getDashboardPath } from "../utils/roles";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -22,6 +23,7 @@ function validate({ name, email, password }) {
 }
 
 function Register() {
+  usePageTitle("Create account");
   const { register } = useAuth();
   const navigate = useNavigate();
 

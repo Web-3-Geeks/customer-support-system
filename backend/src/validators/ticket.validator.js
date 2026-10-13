@@ -4,13 +4,13 @@ const {
   TICKET_PRIORITY,
   TICKET_CATEGORY,
 } = require("../utils/ticketRules");
+const { isValidDateParam, toRangeStart, toRangeEnd } = require("../utils/dateRange");
 
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid id");
 
-const dateOnly = z
+const dateParam = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Use the YYYY-MM-DD format")
-  .refine((value) => !Number.isNaN(Date.parse(value)), "Invalid date");
+  .refine(isValidDateParam, "Use YYYY-MM-DD or an ISO 8601 timestamp");
 
 const subject = z
   .string({ error: "Subject is required" })
@@ -79,15 +79,15 @@ const listTicketsSchema = z.object({
       priority: priority.optional(),
       category: category.optional(),
       assignedTo: z.union([objectId, z.literal("unassigned")]).optional(),
-      from: dateOnly.optional(),
-      to: dateOnly.optional(),
+      from: dateParam.optional(),
+      to: dateParam.optional(),
       q: z.string().trim().max(100, "Search text is too long").optional(),
       page: z.coerce.number().int().min(1).default(1),
       limit: z.coerce.number().int().min(1).max(50).default(10),
       sortBy: z.enum(["createdAt", "updatedAt", "ticketNumber"]).default("createdAt"),
       order: z.enum(["asc", "desc"]).default("desc"),
     })
-    .refine((query) => !query.from || !query.to || query.from <= query.to, {
+    .refine((query) => !query.from || !query.to || toRangeStart(query.from) <= toRangeEnd(query.to), {
       message: "from must be before or equal to to",
       path: ["to"],
     }),

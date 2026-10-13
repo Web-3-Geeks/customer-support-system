@@ -1,8 +1,10 @@
 import Button from "../components/Button";
 import { useAuth } from "../context/useAuth";
 import { getDashboardPath } from "../utils/roles";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 function Forbidden() {
+  usePageTitle("No access");
   const { user } = useAuth();
 
   return (

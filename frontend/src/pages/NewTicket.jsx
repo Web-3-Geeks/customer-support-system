@@ -9,6 +9,7 @@ import Alert from "../components/Alert";
 import { ticketApi } from "../api/ticketApi";
 import { getErrorMessage } from "../utils/getErrorMessage";
 import { CATEGORY_LABELS, TICKET_CATEGORIES } from "../utils/tickets";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 function validate({ subject, description }) {
   const errors = {};
@@ -20,6 +21,7 @@ function validate({ subject, description }) {
 }
 
 function NewTicket() {
+  usePageTitle("New ticket");
   const navigate = useNavigate();
   const [form, setForm] = useState({ subject: "", category: "GENERAL", description: "" });
   const [errors, setErrors] = useState({});

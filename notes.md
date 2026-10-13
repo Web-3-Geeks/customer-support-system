@@ -94,7 +94,7 @@
 
 ## Closing
 - [x] Lint + build + tests (backend + frontend)
-- [ ] Audit (a11y, edge cases, empty states)
+- [x] Audit (a11y, edge cases, empty states)
 - [x] README mein Day 2 section
-- [ ] Deploy check (Railway + Vercel)
+- [x] Deploy check (Railway + Vercel)
 - [ ] week7/Day2 snapshot + commits + push

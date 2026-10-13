@@ -7,6 +7,7 @@ import Alert from "./Alert";
 import Button from "./Button";
 import { TicketIcon } from "./icons";
 import { useTicketList } from "../hooks/useTicketList";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 function TicketListView({
   title,
@@ -20,6 +21,7 @@ function TicketListView({
   agents,
   renderAssignee,
 }) {
+  usePageTitle(title);
   const { filters, tickets, pagination, loading, error, updateFilters, setPage, resetFilters, reload } =
     useTicketList(fetchTickets);
 

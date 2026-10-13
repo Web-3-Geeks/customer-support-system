@@ -3,6 +3,10 @@ import { getErrorMessage } from "../utils/getErrorMessage";
 
 export const PAGE_SIZE = 10;
 
+// The date inputs hold the user local day; the API compares UTC timestamps.
+const startOfLocalDay = (date) => new Date(`${date}T00:00:00`).toISOString();
+const endOfLocalDay = (date) => new Date(`${date}T23:59:59.999`).toISOString();
+
 const DEFAULT_FILTERS = {
   q: "",
   status: "",
@@ -29,6 +33,8 @@ export function useTicketList(fetchTickets) {
     const params = Object.fromEntries(
       Object.entries(filters).filter(([, value]) => value !== "")
     );
+    if (params.from) params.from = startOfLocalDay(params.from);
+    if (params.to) params.to = endOfLocalDay(params.to);
     params.limit = PAGE_SIZE;
 
     fetchTickets(params)

@@ -8,6 +8,11 @@ function AssigneeSelect({ ticket, agents, onAssigned }) {
 
   const isClosed = ticket.status === "CLOSED";
 
+  // Keep the current assignee selectable even if they are no longer in the agent list.
+  const current = ticket.assignedTo;
+  const options =
+    current && !agents.some((agent) => agent._id === current._id) ? [current, ...agents] : agents;
+
   const handleChange = async (e) => {
     setSaving(true);
     setError("");
@@ -34,7 +39,7 @@ function AssigneeSelect({ ticket, agents, onAssigned }) {
         <option value="" disabled>
           Unassigned
         </option>
-        {agents.map((agent) => (
+        {options.map((agent) => (
           <option key={agent._id} value={agent._id}>
             {agent.name}
           </option>

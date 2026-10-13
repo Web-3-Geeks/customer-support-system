@@ -1,6 +1,8 @@
 import Button from "../components/Button";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 function NotFound() {
+  usePageTitle("Page not found");
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
       <p className="text-6xl font-extrabold tracking-tight text-coral-500">404</p>

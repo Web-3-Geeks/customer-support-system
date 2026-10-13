@@ -9,6 +9,9 @@ const ticketRoutes = require("./routes/ticket.routes");
 
 const app = express();
 
+// Railway sits behind one proxy; without this every client would share the proxy IP.
+app.set("trust proxy", 1);
+
 app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_URL }));
 if (process.env.NODE_ENV !== "test") {

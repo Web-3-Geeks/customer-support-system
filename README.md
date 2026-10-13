@@ -50,7 +50,8 @@ Real-time chat (Socket.io) comes in the following days.
 - **Customer:** My Tickets (search, filters, sort, pagination), New Ticket form, ticket detail with edit, cancel and "confirm and close", and a dashboard with real counts.
 - **Agent:** Assigned Tickets list, ticket detail where the status can be changed (only to allowed next statuses) and the priority updated, and a dashboard with real counts.
 - **Admin:** All Tickets with an agent filter and an inline assign/reassign dropdown, and a ticket detail page to change status, priority, category and assignee.
-- Shared building blocks: `TicketFilters`, `TicketTable`, `Pagination`, status and priority badges, and two hooks (`useTicketList`, `useTicketSummary`).
+- Shared building blocks: `TicketFilters`, `TicketTable`, `Pagination`, status and priority badges, and hooks (`useTicketList`, `useTicketSummary`, `usePageTitle`).
+- Accessibility: colour contrast meets WCAG AA (the primary coral and the muted text colour were darkened after an audit), every page sets its own document title, a "Skip to main content" link, and keyboard focus moves into the confirmation panel and the edit form and returns afterwards.
 
 ## Ticket lifecycle and rules
 
@@ -71,6 +72,7 @@ Other rules:
 - **Agents** can change the priority of their assigned tickets. **Admins** can change the priority and category of any ticket.
 - A ticket needs an assigned agent before it can move to `IN_PROGRESS`.
 - Tickets can only be assigned to users with the `AGENT` role. Closed tickets cannot be reassigned or modified.
+- An agent's role cannot be changed while they still have open (not `CLOSED`) tickets assigned; the API returns `409` and the admin has to reassign them first. Otherwise those tickets would be stuck with someone who can no longer open them.
 - `resolvedAt` is set when a ticket is resolved, cleared when it is reopened, and kept when the customer closes it.
 - A transition that does not exist returns `400`; a transition that exists but is not allowed for the caller's role returns `403`.
 - A ticket outside the caller's scope (another customer's ticket, or one not assigned to the agent) returns `404`, so its existence is not revealed.
@@ -104,7 +106,7 @@ Protected requests send `Authorization: Bearer <token>`.
 |---|---|
 | `status`, `priority`, `category` | Exact filters |
 | `assignedTo` | An agent id, or `unassigned` |
-| `from`, `to` | Creation date range, `YYYY-MM-DD` (UTC, `to` includes the whole day) |
+| `from`, `to` | Creation date range. Either `YYYY-MM-DD` (read as UTC; `to` includes the whole day) or an ISO 8601 timestamp such as `2026-02-10T09:00:00.000Z`. The web app sends the user's local day as a timestamp range, so "today" matches the user's own time zone |
 | `q` | Search in ticket number and subject (case-insensitive) |
 | `page`, `limit` | Pagination, default `1` and `10`, maximum limit `50` |
 | `sortBy`, `order` | `createdAt` (default), `updatedAt` or `ticketNumber`; `asc` or `desc` (default) |
@@ -123,6 +125,7 @@ Status codes: `400` validation, `401` missing/invalid token or wrong credentials
 - **Controllers vs services.** Controllers only translate HTTP; business logic lives in services so it can be reused later by Socket.io handlers.
 - **One source of truth for ticket rules.** `ticketRules.js` holds the transition table. The API returns `allowedNextStatuses` with each ticket, so the frontend never duplicates the table.
 - **Ownership is enforced in the database query**, not after loading the ticket: every lookup is scoped by role (`createdBy` for customers, `assignedTo` for agents), so a user cannot reach a ticket outside their scope.
+- **Rate limiting on authentication.** Login allows 10 failed attempts per IP in 15 minutes (successful logins are not counted) and registration allows 20 per hour; beyond that the API returns `429` in the usual error format. The server trusts one proxy hop (`trust proxy`), because it runs behind Railway's proxy and would otherwise see every user as the same IP. Limits are skipped when `NODE_ENV=test`.
 - **The list search escapes regular-expression characters**, so user input is always treated as plain text.
 - **Sorting by priority is not offered**, because priorities are stored as words and would sort alphabetically (`HIGH` before `LOW` before `MEDIUM`).
 - **Express 5** forwards errors from async handlers automatically, so controllers have no try/catch.
@@ -170,8 +173,8 @@ To reset the admin password later: set `ADMIN_PASSWORD` and run `npm run seed:ad
 ## Tests
 
 ```bash
-cd backend && npm test      # 85 tests: auth, RBAC, tickets, status rules, assignment, search/filter/pagination
-cd frontend && npm test     # 42 tests: route guards, forms, ticket lists, ticket detail per role, admin dashboard
+cd backend && npm test      # 98 tests: auth, RBAC, tickets, status rules, assignment, search/filter/pagination, rate limiting
+cd frontend && npm test     # 52 tests: route guards, forms, ticket lists, ticket detail per role, admin dashboard, accessibility
 ```
 
 Backend tests run against `mongodb-memory-server`, so they never touch the real database. The first run downloads a MongoDB binary and can take a minute.

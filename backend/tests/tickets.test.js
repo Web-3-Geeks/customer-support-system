@@ -706,4 +706,105 @@ describe("search, filtering, sorting and pagination", () => {
     expect(numbers(own)).toEqual(["TKT-000103"]);
     expect(outside.body.pagination.total).toBe(0);
   });
+
+  it("accepts ISO timestamps as the date range", async () => {
+    const inside = await list(
+      users.admin.token,
+      "?from=2026-02-10T09:00:00.000Z&to=2026-02-10T11:00:00.000Z"
+    );
+    const outside = await list(
+      users.admin.token,
+      "?from=2026-02-10T10:00:01.000Z&to=2026-02-10T12:00:00.000Z"
+    );
+
+    expect(numbers(inside)).toEqual(["TKT-000102"]);
+    expect(outside.body.pagination.total).toBe(0);
+  });
+
+  it("supports a whole local day sent as a timestamp range", async () => {
+    // 10 Feb in UTC+5 runs from 09 Feb 19:00Z to 10 Feb 18:59:59.999Z
+    const res = await list(
+      users.admin.token,
+      "?from=2026-02-09T19:00:00.000Z&to=2026-02-10T18:59:59.999Z"
+    );
+
+    expect(numbers(res)).toEqual(["TKT-000102"]);
+  });
+
+  it("understands timestamps with a UTC offset", async () => {
+    const res = await list(
+      users.admin.token,
+      "?from=2026-02-10T15:00:00%2B05:00&to=2026-02-10T15:00:00%2B05:00"
+    );
+
+    expect(numbers(res)).toEqual(["TKT-000102"]);
+  });
+
+  it("rejects inverted timestamps and malformed values", async () => {
+    expect(
+      (await list(users.admin.token, "?from=2026-02-10T12:00:00.000Z&to=2026-02-10T09:00:00.000Z")).status
+    ).toBe(400);
+    expect((await list(users.admin.token, "?from=2026-02-10T25:99:00Z")).status).toBe(400);
+  });
+});
+
+describe("changing the role of an agent", () => {
+  const changeRole = (adminToken, userId, role) =>
+    request(app)
+      .patch(`/api/admin/users/${userId}/role`)
+      .set(authHeader(adminToken))
+      .send({ role });
+
+  it("is blocked while the agent still has open tickets", async () => {
+    const { customer, agent, admin } = await setupUsers();
+    const created = await createTicketAs(customer.token);
+    await assignTicketAs(admin.token, created.body.data.ticket._id, agent.user._id);
+
+    const res = await changeRole(admin.token, agent.user._id, ROLES.CUSTOMER);
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toMatch(/still has 1 open ticket/);
+  });
+
+  it("is allowed once the tickets are reassigned", async () => {
+    const { customer, agent, agent2, admin } = await setupUsers();
+    const created = await createTicketAs(customer.token);
+    const id = created.body.data.ticket._id;
+    await assignTicketAs(admin.token, id, agent.user._id);
+    await assignTicketAs(admin.token, id, agent2.user._id);
+
+    const res = await changeRole(admin.token, agent.user._id, ROLES.CUSTOMER);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.user.role).toBe("CUSTOMER");
+  });
+
+  it("is allowed when the agent only has closed tickets", async () => {
+    const { customer, agent, admin } = await setupUsers();
+    const created = await createTicketAs(customer.token);
+    const id = created.body.data.ticket._id;
+    await assignTicketAs(admin.token, id, agent.user._id);
+    await setStatusAs(customer.token, id, "CLOSED");
+
+    const res = await changeRole(admin.token, agent.user._id, ROLES.CUSTOMER);
+
+    expect(res.status).toBe(200);
+  });
+
+  it("does not affect other roles or keeping the agent role", async () => {
+    const { customer, agent, admin } = await setupUsers();
+    const created = await createTicketAs(customer.token);
+    await assignTicketAs(admin.token, created.body.data.ticket._id, agent.user._id);
+
+    expect((await changeRole(admin.token, agent.user._id, ROLES.AGENT)).status).toBe(200);
+    expect((await changeRole(admin.token, customer.user._id, ROLES.AGENT)).status).toBe(200);
+  });
+
+  it("still returns 404 for an unknown user", async () => {
+    const { admin } = await setupUsers();
+
+    const res = await changeRole(admin.token, new mongoose.Types.ObjectId(), ROLES.AGENT);
+
+    expect(res.status).toBe(404);
+  });
 });

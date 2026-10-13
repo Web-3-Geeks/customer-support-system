@@ -7,7 +7,7 @@ function Logo({ to = "/" }) {
         <circle cx="16" cy="16" r="11" stroke="#0f1526" strokeWidth="5" />
         <path
           d="M16 5a11 11 0 0 1 11 11"
-          stroke="#ef6b57"
+          stroke="#c43d28"
           strokeWidth="5"
           strokeLinecap="round"
         />

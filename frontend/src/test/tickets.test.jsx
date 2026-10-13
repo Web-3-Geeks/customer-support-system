@@ -1,6 +1,6 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useNavigate } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { AuthProvider } from "../context/AuthContext";
@@ -480,5 +480,143 @@ describe("admin", () => {
     await waitFor(() =>
       expect(ticketApi.update).toHaveBeenCalledWith("t1", { priority: "URGENT", category: "BILLING" })
     );
+  });
+
+  it("keeps the current assignee in the dropdown even if they are not in the agent list", async () => {
+    const ghost = { _id: "9", name: "Ghost Agent", email: "ghost@test.com" };
+    adminApi.getTickets.mockResolvedValue(listResponse([{ ...baseTicket, status: "IN_PROGRESS", assignedTo: ghost }]));
+    renderAt("/admin/tickets");
+
+    const select = await screen.findByLabelText("Assign TKT-000001");
+    await waitFor(() => expect(select).toHaveDisplayValue("Ghost Agent"));
+  });
+
+  it("keeps the current assignee selected on the ticket page too", async () => {
+    const ghost = { _id: "9", name: "Ghost Agent", email: "ghost@test.com" };
+    ticketApi.get.mockResolvedValue(
+      ticketResponse({ status: "IN_PROGRESS", assignedTo: ghost, allowedNextStatuses: ["RESOLVED"] })
+    );
+    renderAt("/admin/tickets/t1");
+
+    const select = await screen.findByLabelText("Assign to agent");
+    expect(select).toHaveDisplayValue("Ghost Agent");
+    expect(screen.getByRole("button", { name: "Reassign ticket" })).toBeDisabled();
+  });
+
+  it("shows why a role change was refused", async () => {
+    const message = "Aisha Agent still has 1 open ticket. Reassign them before changing this role.";
+    adminApi.getUsers.mockResolvedValue({
+      data: { data: { users: agents.map((a) => ({ ...a, createdAt: "2026-10-01T00:00:00.000Z" })) } },
+    });
+    adminApi.updateUserRole.mockRejectedValue({ response: { data: { message } } });
+    const user = userEvent.setup();
+    renderAt("/admin");
+
+    await user.selectOptions(await screen.findByLabelText("Role for Aisha Agent"), "CUSTOMER");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(message);
+  });
+});
+
+describe("filters, titles and keyboard support", () => {
+  it("sends the user's local day to the API as a UTC timestamp range", async () => {
+    sessionAs(customer);
+    ticketApi.list.mockResolvedValue(listResponse([baseTicket]));
+    renderAt("/customer/tickets");
+
+    await screen.findByText("Cannot log in");
+    fireEvent.change(screen.getByLabelText("Created from"), { target: { value: "2026-02-10" } });
+    fireEvent.change(screen.getByLabelText("Created until"), { target: { value: "2026-02-10" } });
+
+    await waitFor(() =>
+      expect(ticketApi.list).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          from: new Date("2026-02-10T00:00:00").toISOString(),
+          to: new Date("2026-02-10T23:59:59.999").toISOString(),
+        })
+      )
+    );
+  });
+
+  it("sets a descriptive page title on each page", async () => {
+    renderAt("/login");
+    await waitFor(() => expect(document.title).toBe("Sign in | SupportDesk"));
+  });
+
+  it("titles the lists, dashboards and ticket pages", async () => {
+    sessionAs(customer);
+    ticketApi.get.mockResolvedValue(ticketResponse());
+
+    const first = renderAt("/customer");
+    await waitFor(() => expect(document.title).toBe("Dashboard | SupportDesk"));
+    first.unmount();
+
+    const second = renderAt("/customer/tickets");
+    await waitFor(() => expect(document.title).toBe("My tickets | SupportDesk"));
+    second.unmount();
+
+    renderAt("/customer/tickets/t1");
+    await waitFor(() => expect(document.title).toBe("TKT-000001 | SupportDesk"));
+  });
+
+  it("offers a skip link to the main content", async () => {
+    sessionAs(customer);
+    renderAt("/customer");
+
+    const link = await screen.findByRole("link", { name: "Skip to main content" });
+    expect(link).toHaveAttribute("href", "#main-content");
+    expect(document.getElementById("main-content")).toBeInTheDocument();
+  });
+
+  it("moves focus into the confirmation and back when it is dismissed", async () => {
+    sessionAs(customer);
+    ticketApi.get.mockResolvedValue(ticketResponse());
+    const user = userEvent.setup();
+    renderAt("/customer/tickets/t1");
+
+    await user.click(await screen.findByRole("button", { name: "Cancel ticket" }));
+    expect(screen.getByRole("button", { name: "Yes, continue" })).toHaveFocus();
+
+    await user.click(screen.getByRole("button", { name: "Keep open" }));
+    expect(screen.getByRole("button", { name: "Cancel ticket" })).toHaveFocus();
+  });
+
+  it("focuses the subject when editing starts", async () => {
+    sessionAs(customer);
+    ticketApi.get.mockResolvedValue(ticketResponse());
+    const user = userEvent.setup();
+    renderAt("/customer/tickets/t1");
+
+    await user.click(await screen.findByRole("button", { name: "Edit ticket" }));
+
+    expect(screen.getByLabelText("Subject")).toHaveFocus();
+  });
+
+  it("starts clean when moving from one ticket to another", async () => {
+    sessionAs(customer);
+    ticketApi.get.mockImplementation((id) =>
+      id === "t1" ? Promise.resolve(ticketResponse()) : new Promise(() => {})
+    );
+    const user = userEvent.setup();
+
+    function GoTo() {
+      const navigate = useNavigate();
+      return <button onClick={() => navigate("/customer/tickets/t2")}>open second ticket</button>;
+    }
+
+    render(
+      <MemoryRouter initialEntries={["/customer/tickets/t1"]}>
+        <AuthProvider>
+          <GoTo />
+          <App />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole("heading", { name: "Cannot log in" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "open second ticket" }));
+
+    await waitFor(() => expect(ticketApi.get).toHaveBeenCalledWith("t2"));
+    expect(screen.queryByRole("heading", { name: "Cannot log in" })).not.toBeInTheDocument();
   });
 });

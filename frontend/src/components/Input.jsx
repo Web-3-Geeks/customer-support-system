@@ -19,7 +19,7 @@ function Input({ label, type = "text", error, className = "", ...props }) {
           type={isPassword && showPassword ? "text" : type}
           aria-invalid={error ? "true" : "false"}
           aria-describedby={error ? `${id}-error` : undefined}
-          className={`w-full rounded-xl border bg-white px-4 py-3 text-sm text-ink placeholder:text-slate-400 focus:border-coral-500 focus:outline-none focus:ring-2 focus:ring-coral-500/20 ${
+          className={`w-full rounded-xl border bg-white px-4 py-3 text-sm text-ink placeholder:text-slate-500 focus:border-coral-500 focus:outline-none focus:ring-2 focus:ring-coral-500/20 ${
             error ? "border-red-400" : "border-line"
           } ${isPassword ? "pr-11" : ""}`}
           {...props}

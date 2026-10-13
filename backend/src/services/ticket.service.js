@@ -3,6 +3,7 @@ const Counter = require("../models/Counter");
 const User = require("../models/User");
 const AppError = require("../utils/AppError");
 const { ROLES } = require("../utils/constants");
+const { toRangeStart, toRangeEnd } = require("../utils/dateRange");
 const {
   TICKET_STATUS,
   CUSTOMER_EDITABLE_STATUSES,
@@ -82,8 +83,8 @@ const listTickets = async (user, query) => {
 
   if (from || to) {
     const range = {};
-    if (from) range.$gte = new Date(`${from}T00:00:00.000Z`);
-    if (to) range.$lte = new Date(`${to}T23:59:59.999Z`);
+    if (from) range.$gte = toRangeStart(from);
+    if (to) range.$lte = toRangeEnd(to);
     conditions.push({ createdAt: range });
   }
 

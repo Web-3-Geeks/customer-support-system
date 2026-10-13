@@ -9,10 +9,12 @@ import { PlusIcon, TicketIcon } from "../components/icons";
 import { useAuth } from "../context/useAuth";
 import { useTicketSummary } from "../hooks/useTicketSummary";
 import { ticketApi } from "../api/ticketApi";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 const STATUSES = ["OPEN", "IN_PROGRESS", "RESOLVED"];
 
 function CustomerDashboard() {
+  usePageTitle("Dashboard");
   const { user } = useAuth();
   const { counts, recent, loading, error } = useTicketSummary(ticketApi.list, STATUSES);
 

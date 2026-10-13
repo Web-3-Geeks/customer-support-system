@@ -46,12 +46,12 @@ function Sidebar({ user, onLogout, onClose }) {
             <div
               key={label}
               aria-disabled="true"
-              className={`${itemBase} cursor-not-allowed text-slate-400`}
+              className={`${itemBase} cursor-not-allowed text-slate-500`}
             >
               <Icon />
               <span className="flex-1">{label}</span>
               {soon && (
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
                   Soon
                 </span>
               )}

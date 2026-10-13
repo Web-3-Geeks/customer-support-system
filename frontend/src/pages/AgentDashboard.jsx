@@ -8,10 +8,12 @@ import { TicketIcon } from "../components/icons";
 import { useAuth } from "../context/useAuth";
 import { useTicketSummary } from "../hooks/useTicketSummary";
 import { ticketApi } from "../api/ticketApi";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 const STATUSES = ["IN_PROGRESS", "WAITING_FOR_CUSTOMER", "RESOLVED"];
 
 function AgentDashboard() {
+  usePageTitle("Dashboard");
   const { user } = useAuth();
   const { counts, total, recent, loading, error } = useTicketSummary(ticketApi.list, STATUSES);
 

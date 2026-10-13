@@ -10,6 +10,7 @@ import Alert from "../components/Alert";
 import EmptyState from "../components/EmptyState";
 import Button from "../components/Button";
 import { SearchIcon, UsersIcon } from "../components/icons";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 function formatDate(value) {
   return new Date(value).toLocaleDateString(undefined, {
@@ -20,6 +21,7 @@ function formatDate(value) {
 }
 
 function AdminDashboard() {
+  usePageTitle("Users");
   const { user: currentUser } = useAuth();
 
   const [users, setUsers] = useState([]);
@@ -125,7 +127,7 @@ function AdminDashboard() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name or email"
               aria-label="Search users"
-              className="w-full rounded-xl border border-line bg-white py-2.5 pl-10 pr-3 text-sm text-ink placeholder:text-slate-400 focus:border-coral-500 focus:outline-none focus:ring-2 focus:ring-coral-500/20"
+              className="w-full rounded-xl border border-line bg-white py-2.5 pl-10 pr-3 text-sm text-ink placeholder:text-slate-500 focus:border-coral-500 focus:outline-none focus:ring-2 focus:ring-coral-500/20"
             />
           </div>
         </div>

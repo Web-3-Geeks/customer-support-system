@@ -26,6 +26,13 @@ function DashboardLayout() {
 
   return (
     <div className="min-h-screen p-3 lg:p-4">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-ink focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+
       <aside className="fixed inset-y-4 left-4 hidden w-64 lg:block">
         <Sidebar user={user} onLogout={handleLogout} onClose={() => {}} />
       </aside>
@@ -52,7 +59,7 @@ function DashboardLayout() {
           </button>
         </header>
 
-        <main className="mx-auto max-w-6xl px-1 py-2 lg:px-4 lg:py-4">
+        <main id="main-content" tabIndex={-1} className="mx-auto max-w-6xl px-1 py-2 focus:outline-none lg:px-4 lg:py-4">
           <Outlet />
         </main>
       </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { adminApi } from "../api/adminApi";
 import { ticketApi } from "../api/ticketApi";
@@ -22,6 +22,7 @@ import Textarea from "../components/Textarea";
 import StatusBadge from "../components/StatusBadge";
 import PriorityBadge from "../components/PriorityBadge";
 import FullPageLoader from "../components/FullPageLoader";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 function Meta({ label, children }) {
   return (
@@ -32,8 +33,7 @@ function Meta({ label, children }) {
   );
 }
 
-function TicketDetail() {
-  const { id } = useParams();
+function TicketDetailContent({ id }) {
   const { user } = useAuth();
   const basePath = ticketBasePath(user.role);
 
@@ -47,6 +47,28 @@ function TicketDetail() {
   const [editForm, setEditForm] = useState({ subject: "", description: "", category: "GENERAL" });
   const [confirmClose, setConfirmClose] = useState(false);
   const [draft, setDraft] = useState({ status: "", priority: "", category: "", agentId: "" });
+
+  const confirmButtonRef = useRef(null);
+  const closeTriggerRef = useRef(null);
+  const confirmWasOpen = useRef(false);
+  const subjectInputRef = useRef(null);
+
+  usePageTitle(ticket ? ticket.ticketNumber : "Ticket");
+
+  // Move keyboard focus into the confirmation, and back to its trigger when it is dismissed.
+  useEffect(() => {
+    if (confirmClose) {
+      confirmWasOpen.current = true;
+      confirmButtonRef.current?.focus();
+    } else if (confirmWasOpen.current) {
+      confirmWasOpen.current = false;
+      closeTriggerRef.current?.focus();
+    }
+  }, [confirmClose]);
+
+  useEffect(() => {
+    if (editing) subjectInputRef.current?.focus();
+  }, [editing]);
 
   useEffect(() => {
     let ignore = false;
@@ -175,6 +197,10 @@ function TicketDetail() {
   const priorityValue = draft.priority || ticket.priority;
   const categoryValue = draft.category || ticket.category;
   const agentValue = draft.agentId || ticket.assignedTo?._id || "";
+  const agentOptions =
+    ticket.assignedTo && !agents.some((agent) => agent._id === ticket.assignedTo._id)
+      ? [ticket.assignedTo, ...agents]
+      : agents;
 
   const savePriorityAndCategory = async () => {
     const changes = {};
@@ -225,6 +251,7 @@ function TicketDetail() {
             {editing ? (
               <form onSubmit={saveEdit} noValidate className="space-y-5">
                 <Input
+                  ref={subjectInputRef}
                   label="Subject"
                   value={editForm.subject}
                   maxLength={150}
@@ -318,7 +345,13 @@ function TicketDetail() {
                           : "Close this ticket? This cannot be undone."}
                       </p>
                       <div className="mt-3 flex gap-2">
-                        <Button variant="dark" className="px-3 py-1.5" onClick={closeTicket} disabled={busy}>
+                        <Button
+                          ref={confirmButtonRef}
+                          variant="dark"
+                          className="px-3 py-1.5"
+                          onClick={closeTicket}
+                          disabled={busy}
+                        >
                           Yes, continue
                         </Button>
                         <Button variant="ghost" className="px-3 py-1.5" onClick={() => setConfirmClose(false)}>
@@ -327,7 +360,12 @@ function TicketDetail() {
                       </div>
                     </div>
                   ) : (
-                    <Button variant="primary" className="w-full" onClick={() => setConfirmClose(true)}>
+                    <Button
+                      ref={closeTriggerRef}
+                      variant="primary"
+                      className="w-full"
+                      onClick={() => setConfirmClose(true)}
+                    >
                       {ticket.status === "OPEN" ? "Cancel ticket" : "Confirm and close"}
                     </Button>
                   ))}
@@ -403,7 +441,7 @@ function TicketDetail() {
                       <option value="" disabled>
                         {agents.length === 0 ? "No agents available" : "Select an agent"}
                       </option>
-                      {agents.map((agent) => (
+                      {agentOptions.map((agent) => (
                         <option key={agent._id} value={agent._id}>
                           {agent.name}
                         </option>
@@ -421,6 +459,12 @@ function TicketDetail() {
       </div>
     </>
   );
+}
+
+// Keyed by id so moving from one ticket to another starts with a clean state.
+function TicketDetail() {
+  const { id } = useParams();
+  return <TicketDetailContent key={id} id={id} />;
 }
 
 export default TicketDetail;
