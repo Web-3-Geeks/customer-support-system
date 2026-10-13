@@ -97,4 +97,4 @@
 - [x] Audit (a11y, edge cases, empty states)
 - [x] README mein Day 2 section
 - [x] Deploy check (Railway + Vercel)
-- [ ] week7/Day2 snapshot + commits + push
+- [x] week7/Day2 snapshot + commits + push
