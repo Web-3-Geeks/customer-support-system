@@ -1,8 +1,8 @@
 const User = require("../models/User");
 const AppError = require("../utils/AppError");
 
-const getAllUsers = async () => {
-  return User.find().sort({ createdAt: -1 });
+const getAllUsers = async ({ role } = {}) => {
+  return User.find(role ? { role } : {}).sort({ createdAt: -1 });
 };
 
 const updateUserRole = async (targetUserId, newRole, currentUserId) => {

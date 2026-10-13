@@ -10,4 +10,10 @@ const updateRoleSchema = z.object({
   }),
 });
 
-module.exports = { updateRoleSchema };
+const listUsersSchema = z.object({
+  query: z.object({
+    role: z.enum(Object.values(ROLES), { error: "Role must be CUSTOMER, AGENT or ADMIN" }).optional(),
+  }),
+});
+
+module.exports = { updateRoleSchema, listUsersSchema };

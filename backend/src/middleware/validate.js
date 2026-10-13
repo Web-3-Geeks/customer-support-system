@@ -9,12 +9,16 @@ const validate = (schema) => (req, res, next) => {
 
     if (!result.success) {
         const message = result.error.issues
-         .map((issue) => `${issue.path.slice(1).join(".")}: ${issue.message}`)
+         .map((issue) => {
+            const field = issue.path.slice(1).join(".");
+            return field ? `${field}: ${issue.message}` : issue.message;
+         })
          .join(", ");
         return next(new AppError(message, 400));
     }
 
     if (result.data.body) req.body = result.data.body;
+    req.validated = result.data;
     next();
 };
 
