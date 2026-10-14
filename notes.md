@@ -145,8 +145,8 @@
 ## Closing
 - [x] Lint + build + tests (backend 156, frontend 84 tests)
 - [x] Rate limit on sending/editing messages (20 per minute per user, 429; backend 159 tests)
-- [ ] Audit (a11y, edge cases, security)
+- [x] Audit (a11y contrast, edge cases, security, npm audit: 0 prod vulnerabilities)
 - [x] Postman collection (backend/SupportDesk.postman_collection.json, newman: 58 requests, 73 assertions pass)
 - [x] README Day 3 section
-- [ ] Deploy check (Railway WebSocket + Vercel)
-- [ ] week7/Day3 snapshot + commits + push
+- [x] Deploy check (Railway WebSocket + Vercel)
+- [x] week7/Day3 snapshot + commits + push
