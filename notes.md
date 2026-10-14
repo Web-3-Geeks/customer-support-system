@@ -123,7 +123,7 @@
 
 ## Task 3: Real-Time
 - [x] Socket.io server + JWT handshake auth
-- [ ] Railway par WebSocket test (chhota version pehle deploy)
+- [x] Railway par WebSocket test (chhota version pehle deploy)
 - [x] join_ticket / leave_ticket with scope check
 - [x] user_joined / user_left (multi-tab dedupe)
 - [x] ticket_message emit (DB save ke baad)
@@ -131,20 +131,22 @@
 - [x] Reassign par purane agent ko room se nikalna
 
 ## Task 4: Frontend
-- [ ] socket client + SocketContext (auth, reconnect, status)
-- [ ] useTicketConversation hook (history, dedupe by _id, refetch on reconnect)
-- [ ] ConversationPanel: history, composer, sender + time, edit
-- [ ] Connection status, loading, empty, error states
-- [ ] Panel teeno ticket detail pages mein + live ticket_updated refresh
+- [x] socket client + SocketContext (auth, reconnect, status)
+- [x] useTicketConversation hook (history, dedupe by _id, refetch on reconnect)
+- [x] ConversationPanel: history, composer, sender + time, edit
+- [x] Connection status, loading, empty, error states
+- [x] Panel teeno ticket detail pages mein + live ticket_updated refresh
 
 ## Tests
 - [x] Message API tests (create, list, scope, edit rules, CLOSED)
 - [x] Socket tests (auth, unauthorized join, broadcast, revoke)
-- [ ] Frontend tests (panel, dedupe, states)
+- [x] Frontend tests (panel, dedupe, states)
 
 ## Closing
-- [ ] Lint + build + tests
+- [x] Lint + build + tests (backend 156, frontend 84 tests)
+- [x] Rate limit on sending/editing messages (20 per minute per user, 429; backend 159 tests)
 - [ ] Audit (a11y, edge cases, security)
-- [ ] README Day 3 section
+- [x] Postman collection (backend/SupportDesk.postman_collection.json, newman: 58 requests, 73 assertions pass)
+- [x] README Day 3 section
 - [ ] Deploy check (Railway WebSocket + Vercel)
 - [ ] week7/Day3 snapshot + commits + push
