@@ -15,6 +15,16 @@ const {
   updateStatusSchema,
   listTicketsSchema,
 } = require("../validators/ticket.validator");
+const {
+  createMessage,
+  listMessages,
+  editMessage,
+} = require("../controllers/message.controller");
+const {
+  createMessageSchema,
+  updateMessageSchema,
+  listMessagesSchema,
+} = require("../validators/message.validator");
 const { ROLES } = require("../utils/constants");
 
 const router = express.Router();
@@ -26,5 +36,8 @@ router.get("/", validate(listTicketsSchema), listTickets);
 router.get("/:id", validate(ticketIdSchema), getTicket);
 router.patch("/:id", validate(updateTicketSchema), updateTicket);
 router.patch("/:id/status", validate(updateStatusSchema), changeStatus);
+router.post("/:id/messages", validate(createMessageSchema), createMessage);
+router.get("/:id/messages", validate(listMessagesSchema), listMessages);
+router.patch("/:id/messages/:messageId", validate(updateMessageSchema), editMessage);
 
 module.exports = router;

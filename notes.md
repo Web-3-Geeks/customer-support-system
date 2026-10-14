@@ -98,3 +98,53 @@
 - [x] README mein Day 2 section
 - [x] Deploy check (Railway + Vercel)
 - [x] week7/Day2 snapshot + commits + push
+
+---
+
+# Week 7 - Day 3: Ticket Conversations & Real-Time Updates
+
+## Rules pehle tay karna (code se pehle)
+- [x] Message rules: TEXT/SYSTEM, kaun bhej sakta hai, CLOSED par band, 2000 chars
+- [x] Edit rules: sirf apna TEXT, 15 min, admin bhi dusre ka nahi, editedAt, delete nahi
+- [x] Socket rules: rooms (ticket:<id>, user:<id>), join check, reassign par revoke, presence dedupe
+
+## Task 1: Ticket Messages
+- [x] TicketMessage model (ticketId, senderId, message, messageType, editedAt, timestamps) + indexes
+- [x] Message validators (Zod): create, edit, list query
+- [x] message.service: createMessage (scope + CLOSED check)
+- [x] message.service: listMessages (limit, before cursor)
+- [x] message.service: editMessage (owner, TEXT, 15 min, CLOSED check)
+- [x] SYSTEM messages (assign, status change) ticket service se
+
+## Task 2: Conversation APIs
+- [x] POST /api/tickets/:id/messages
+- [x] GET /api/tickets/:id/messages
+- [x] PATCH /api/tickets/:id/messages/:messageId
+
+## Task 3: Real-Time
+- [x] Socket.io server + JWT handshake auth
+- [ ] Railway par WebSocket test (chhota version pehle deploy)
+- [x] join_ticket / leave_ticket with scope check
+- [x] user_joined / user_left (multi-tab dedupe)
+- [x] ticket_message emit (DB save ke baad)
+- [x] ticket_updated, ticket_status_changed, ticket_assigned emit
+- [x] Reassign par purane agent ko room se nikalna
+
+## Task 4: Frontend
+- [ ] socket client + SocketContext (auth, reconnect, status)
+- [ ] useTicketConversation hook (history, dedupe by _id, refetch on reconnect)
+- [ ] ConversationPanel: history, composer, sender + time, edit
+- [ ] Connection status, loading, empty, error states
+- [ ] Panel teeno ticket detail pages mein + live ticket_updated refresh
+
+## Tests
+- [x] Message API tests (create, list, scope, edit rules, CLOSED)
+- [x] Socket tests (auth, unauthorized join, broadcast, revoke)
+- [ ] Frontend tests (panel, dedupe, states)
+
+## Closing
+- [ ] Lint + build + tests
+- [ ] Audit (a11y, edge cases, security)
+- [ ] README Day 3 section
+- [ ] Deploy check (Railway WebSocket + Vercel)
+- [ ] week7/Day3 snapshot + commits + push

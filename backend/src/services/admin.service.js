@@ -3,6 +3,7 @@ const Ticket = require("../models/Ticket");
 const AppError = require("../utils/AppError");
 const { ROLES } = require("../utils/constants");
 const { TICKET_STATUS } = require("../utils/ticketRules");
+const { disconnectUser } = require("../socket/events");
 
 const getAllUsers = async ({ role } = {}) => {
   return User.find(role ? { role } : {}).sort({ createdAt: -1 });
@@ -37,6 +38,9 @@ const updateUserRole = async (targetUserId, newRole, currentUserId) => {
     { role: newRole },
     { new: true, runValidators: true }
   );
+
+  // Their open sockets were authorised for the old role; reconnecting re-reads the new one.
+  disconnectUser(targetUserId);
 
   return user;
 };

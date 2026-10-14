@@ -4,6 +4,7 @@ const User = require("../models/User");
 const AppError = require("../utils/AppError");
 const { ROLES } = require("../utils/constants");
 const { toRangeStart, toRangeEnd } = require("../utils/dateRange");
+const { scopeFor } = require("./ticketAccess");
 const {
   TICKET_STATUS,
   CUSTOMER_EDITABLE_STATUSES,
@@ -12,7 +13,26 @@ const {
   getAllowedNextStatuses,
 } = require("../utils/ticketRules");
 
+const { createSystemMessage } = require("./message.service");
+const {
+  emitTicketUpdated,
+  emitStatusChanged,
+  emitTicketAssigned,
+  revokeTicketAccess,
+} = require("../socket/events");
+
 const PERSON_FIELDS = "name email";
+
+const readable = (value) => value.replace(/_/g, " ").toLowerCase();
+
+// The change itself is already saved, so a failure to write its timeline line must not turn the request into an error.
+const announce = async (actor, ticketId, text) => {
+  try {
+    await createSystemMessage(actor, ticketId, text);
+  } catch (error) {
+    console.error(`Could not record system message: ${error.message}`);
+  }
+};
 
 // Which ticket fields each role may change through PATCH /api/tickets/:id
 const EDITABLE_FIELDS = {
@@ -30,13 +50,6 @@ const nextTicketNumber = async () => {
     { new: true, upsert: true }
   );
   return `TKT-${String(counter.seq).padStart(6, "0")}`;
-};
-
-// A user only ever sees the tickets that belong to their role.
-const scopeFor = (user) => {
-  if (user.role === ROLES.CUSTOMER) return { createdBy: user._id };
-  if (user.role === ROLES.AGENT) return { assignedTo: user._id };
-  return {};
 };
 
 const populateTicket = (query) =>
@@ -135,8 +148,16 @@ const updateTicket = async (user, id, changes) => {
     throw new AppError("A ticket can only be edited while it is OPEN", 400);
   }
 
+  const changedFields = Object.keys(changes).filter(
+    (field) => String(ticket[field]) !== String(changes[field])
+  );
+
   Object.assign(ticket, changes);
   await ticket.save();
+
+  if (changedFields.length > 0) {
+    emitTicketUpdated(ticket._id, changedFields, user);
+  }
   return present(ticket, user);
 };
 
@@ -159,6 +180,7 @@ const changeStatus = async (user, id, newStatus) => {
     throw new AppError("Assign the ticket to an agent before starting work", 400);
   }
 
+  const previousStatus = ticket.status;
   ticket.status = newStatus;
   if (newStatus === TICKET_STATUS.RESOLVED) {
     ticket.resolvedAt = new Date();
@@ -167,6 +189,13 @@ const changeStatus = async (user, id, newStatus) => {
   }
 
   await ticket.save();
+
+  emitStatusChanged(ticket, previousStatus, user);
+  await announce(
+    user,
+    ticket._id,
+    `Status changed from ${readable(previousStatus)} to ${readable(newStatus)}`
+  );
   return present(ticket, user);
 };
 
@@ -190,8 +219,25 @@ const assignTicket = async (admin, id, agentId) => {
     throw new AppError("Ticket is already assigned to this agent", 400);
   }
 
+  const previousAgentId = ticket.assignedTo;
+  const previousAgent = previousAgentId ? await User.findById(previousAgentId) : null;
+
   ticket.assignedTo = agent._id;
   await ticket.save();
+
+  // Tell the ticket room and both agents first, then take the previous agent out of the room.
+  emitTicketAssigned(ticket, agent, previousAgentId, admin);
+  if (previousAgentId) {
+    await revokeTicketAccess(ticket._id, previousAgentId);
+  }
+  await announce(
+    admin,
+    ticket._id,
+    previousAgent
+      ? `Ticket reassigned from ${previousAgent.name} to ${agent.name}`
+      : `Ticket assigned to ${agent.name}`
+  );
+
   await ticket.populate([
     { path: "createdBy", select: PERSON_FIELDS },
     { path: "assignedTo", select: PERSON_FIELDS },
