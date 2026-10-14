@@ -498,3 +498,64 @@ describe("PATCH /api/tickets/:id/messages/:messageId", () => {
     expect(badId.status).toBe(400);
   });
 });
+
+describe("message rate limit", () => {
+  // The limiter is switched off while NODE_ENV is "test"; these tests turn it on for their own requests.
+  const withLimiterOn = async (run) => {
+    process.env.NODE_ENV = "development";
+    try {
+      await run();
+    } finally {
+      process.env.NODE_ENV = "test";
+    }
+  };
+
+  it("blocks a user who sends more than 20 messages in a minute, with a clear message", async () => {
+    const { customer, ticketId } = await setupTicket();
+
+    await withLimiterOn(async () => {
+      for (let i = 1; i <= 20; i += 1) {
+        const res = await postMessage(customer.token, ticketId, `message ${i}`);
+        expect(res.status).toBe(201);
+      }
+      const blocked = await postMessage(customer.token, ticketId, "message 21");
+
+      expect(blocked.status).toBe(429);
+      expect(blocked.body).toEqual({
+        success: false,
+        message: "You are sending messages too fast. Please wait a moment and try again.",
+      });
+    });
+    expect(await TicketMessage.countDocuments({ messageType: "TEXT" })).toBe(20);
+  });
+
+  it("counts each user separately and only limits writing, not reading", async () => {
+    const { customer, agent, ticketId } = await setupTicket();
+
+    await withLimiterOn(async () => {
+      for (let i = 1; i <= 21; i += 1) {
+        await postMessage(customer.token, ticketId, `spam ${i}`);
+      }
+
+      const agentMessage = await postMessage(agent.token, ticketId, "The agent is not affected");
+      const reading = await listMessages(customer.token, ticketId);
+
+      expect(agentMessage.status).toBe(201);
+      expect(reading.status).toBe(200);
+    });
+  });
+
+  it("also limits editing", async () => {
+    const { customer, ticketId } = await setupTicket();
+    const created = await postMessage(customer.token, ticketId, "to be edited");
+    const messageId = created.body.data.message._id;
+
+    await withLimiterOn(async () => {
+      let last;
+      for (let i = 1; i <= 21; i += 1) {
+        last = await patchMessage(customer.token, ticketId, messageId, `edit ${i}`);
+      }
+      expect(last.status).toBe(429);
+    });
+  });
+});

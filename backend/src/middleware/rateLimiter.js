@@ -1,7 +1,7 @@
 const rateLimit = require("express-rate-limit");
 const AppError = require("../utils/AppError");
 
-const createRateLimiter = ({ windowMs, max, message, skipSuccessfulRequests = false, skip }) =>
+const createRateLimiter = ({ windowMs, max, message, skipSuccessfulRequests = false, skip, keyGenerator }) =>
   rateLimit({
     windowMs,
     limit: max,
@@ -9,6 +9,8 @@ const createRateLimiter = ({ windowMs, max, message, skipSuccessfulRequests = fa
     legacyHeaders: false,
     skipSuccessfulRequests,
     skip,
+    // Without a keyGenerator the limit is counted per IP address.
+    ...(keyGenerator ? { keyGenerator } : {}),
     handler: (req, res, next) => next(new AppError(message, 429)),
   });
 
@@ -30,4 +32,14 @@ const registerLimiter = createRateLimiter({
   skip: skipInTests,
 });
 
-module.exports = { createRateLimiter, loginLimiter, registerLimiter };
+// Counted per logged-in user (this runs after protect), so people behind one shared IP do not use up each other's
+// allowance. 20 messages a minute is far more than a real conversation needs.
+const messageLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 20,
+  keyGenerator: (req) => String(req.user._id),
+  message: "You are sending messages too fast. Please wait a moment and try again.",
+  skip: skipInTests,
+});
+
+module.exports = { createRateLimiter, loginLimiter, registerLimiter, messageLimiter };
