@@ -7,6 +7,7 @@ import { AuthProvider } from "../context/AuthContext";
 import { authApi } from "../api/authApi";
 import { adminApi } from "../api/adminApi";
 import { ticketApi } from "../api/ticketApi";
+import { messageApi } from "../api/messageApi";
 import { tokenStorage } from "../api/tokenStorage";
 
 vi.mock("../api/authApi", () => ({
@@ -17,6 +18,9 @@ vi.mock("../api/adminApi", () => ({
 }));
 vi.mock("../api/ticketApi", () => ({
   ticketApi: { list: vi.fn(), get: vi.fn(), create: vi.fn(), update: vi.fn(), changeStatus: vi.fn() },
+}));
+vi.mock("../api/messageApi", () => ({
+  messageApi: { list: vi.fn(), send: vi.fn(), edit: vi.fn() },
 }));
 
 const customer = { _id: "1", name: "Ali Khan", email: "ali@test.com", role: "CUSTOMER" };
@@ -38,6 +42,7 @@ const sessionAs = (user) => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  messageApi.list.mockResolvedValue({ data: { data: { messages: [] }, hasMore: false } });
   ticketApi.list.mockResolvedValue({
     data: { data: { tickets: [] }, pagination: { page: 1, limit: 10, total: 0, pages: 0 } },
   });

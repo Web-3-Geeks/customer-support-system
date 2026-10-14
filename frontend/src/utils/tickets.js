@@ -45,6 +45,16 @@ export function formatDate(value) {
   });
 }
 
+// Today's messages show just the time; older ones also show the date.
+export function formatMessageTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  const time = date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  return date.toDateString() === new Date().toDateString()
+    ? time
+    : `${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}, ${time}`;
+}
+
 export function formatDateTime(value) {
   if (!value) return "-";
   return new Date(value).toLocaleString(undefined, {

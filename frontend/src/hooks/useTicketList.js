@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useSocket } from "../context/useSocket";
 import { getErrorMessage } from "../utils/getErrorMessage";
 
 export const PAGE_SIZE = 10;
@@ -21,6 +22,7 @@ const DEFAULT_FILTERS = {
 };
 
 export function useTicketList(fetchTickets) {
+  const { socket } = useSocket();
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [result, setResult] = useState({ tickets: [], pagination: null });
   const [loading, setLoading] = useState(true);
@@ -74,6 +76,14 @@ export function useTicketList(fetchTickets) {
     setLoading(true);
     setReloadKey((key) => key + 1);
   }, []);
+
+  // A ticket was assigned to (or taken from) this user: refresh quietly, without the loading state.
+  useEffect(() => {
+    if (!socket) return;
+    const refresh = () => setReloadKey((key) => key + 1);
+    socket.on("ticket_assigned", refresh);
+    return () => socket.off("ticket_assigned", refresh);
+  }, [socket]);
 
   return {
     filters,

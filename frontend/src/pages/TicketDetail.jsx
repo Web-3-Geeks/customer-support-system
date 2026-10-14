@@ -16,6 +16,7 @@ import {
 } from "../utils/tickets";
 import Alert from "../components/Alert";
 import Button from "../components/Button";
+import ConversationPanel from "../components/ConversationPanel";
 import Input from "../components/Input";
 import Select from "../components/Select";
 import Textarea from "../components/Textarea";
@@ -31,6 +32,16 @@ function Meta({ label, children }) {
       <dd className="mt-0.5 text-sm text-ink">{children}</dd>
     </div>
   );
+}
+
+function describeTicketEvent(eventName, payload, actor) {
+  if (eventName === "ticket_status_changed") {
+    return `${actor.name} changed the status to ${STATUS_LABELS[payload.to] ?? payload.to}.`;
+  }
+  if (eventName === "ticket_assigned") {
+    return `${actor.name} assigned this ticket to ${payload.assignedTo.name}.`;
+  }
+  return `${actor.name} updated this ticket.`;
 }
 
 function TicketDetailContent({ id }) {
@@ -152,6 +163,26 @@ function TicketDetailContent({ id }) {
     } finally {
       setBusy(false);
     }
+  };
+
+  // Someone else changed this ticket while it is open: show the new state and say what happened.
+  // Events caused by this user's own actions are skipped, because the page already shows their result.
+  const handleTicketEvent = (eventName, payload) => {
+    const actor = payload.changedBy ?? payload.updatedBy ?? payload.assignedBy;
+    if (!actor || actor.id === user._id) return;
+
+    ticketApi
+      .get(id)
+      .then(({ data }) => {
+        setTicket(data.data.ticket);
+        setNotice({ type: "success", message: describeTicketEvent(eventName, payload, actor) });
+      })
+      .catch((error) => {
+        // Losing access (for example after a reassignment) shows the same page as any other missing ticket.
+        if (error.response?.status === 404) {
+          setLoadError({ message: getErrorMessage(error), notFound: true });
+        }
+      });
   };
 
   const startEditing = () => {
@@ -314,6 +345,8 @@ function TicketDetailContent({ id }) {
             <Meta label="Last updated">{formatDateTime(ticket.updatedAt)}</Meta>
             {ticket.resolvedAt && <Meta label="Resolved">{formatDateTime(ticket.resolvedAt)}</Meta>}
           </dl>
+
+          <ConversationPanel ticket={ticket} onTicketEvent={handleTicketEvent} />
         </section>
 
         <aside className="space-y-4" aria-label="Manage ticket">
