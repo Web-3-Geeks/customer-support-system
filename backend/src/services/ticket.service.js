@@ -7,6 +7,7 @@ const { toRangeStart, toRangeEnd } = require("../utils/dateRange");
 const { scopeFor } = require("./ticketAccess");
 const {
   TICKET_STATUS,
+  TICKET_PRIORITY,
   CUSTOMER_EDITABLE_STATUSES,
   isValidTransition,
   canChangeStatus,
@@ -14,6 +15,18 @@ const {
 } = require("../utils/ticketRules");
 
 const { createSystemMessage } = require("./message.service");
+const {
+  buildSlaView,
+  fieldsForNewTicket,
+  fieldsForPriorityChange,
+  fieldsForStatusChange,
+} = require("../utils/slaRules");
+const { overdueFilter, atRiskFilter } = require("./sla.service");
+const {
+  notifyTicketCreated,
+  notifyTicketAssigned,
+  notifyStatusChanged,
+} = require("./notification.service");
 const {
   emitTicketUpdated,
   emitStatusChanged,
@@ -55,10 +68,31 @@ const nextTicketNumber = async () => {
 const populateTicket = (query) =>
   query.populate("createdBy", PERSON_FIELDS).populate("assignedTo", PERSON_FIELDS);
 
-const present = (ticket, user) => ({
-  ...ticket.toJSON(),
-  allowedNextStatuses: getAllowedNextStatuses(ticket.status, user.role),
-});
+// SLA bookkeeping fields are internal. Staff get a computed `sla` block instead; customers get nothing about SLA.
+const RAW_SLA_FIELDS = [
+  "firstResponseDueAt",
+  "firstResponseWarnAt",
+  "firstResponseAt",
+  "firstResponseMet",
+  "resolutionDueAt",
+  "resolutionWarnAt",
+  "resolutionMet",
+  "slaAlerts",
+];
+
+const present = (ticket, user, now = new Date()) => {
+  const data = ticket.toJSON();
+  RAW_SLA_FIELDS.forEach((field) => delete data[field]);
+
+  const result = {
+    ...data,
+    allowedNextStatuses: getAllowedNextStatuses(ticket.status, user.role),
+  };
+  if (user.role !== ROLES.CUSTOMER) {
+    result.sla = buildSlaView(ticket, now);
+  }
+  return result;
+};
 
 // Tickets outside the user's scope are reported as "not found" so their existence is not revealed.
 const findAccessibleTicket = async (user, id) => {
@@ -71,28 +105,38 @@ const findAccessibleTicket = async (user, id) => {
 
 const createTicket = async (user, { subject, description, category }) => {
   const ticketNumber = await nextTicketNumber();
+  const createdAt = new Date();
   const ticket = await Ticket.create({
     ticketNumber,
     subject,
     description,
     category,
     createdBy: user._id,
+    createdAt,
+    ...fieldsForNewTicket(createdAt, TICKET_PRIORITY.MEDIUM),
   });
   await ticket.populate([
     { path: "createdBy", select: PERSON_FIELDS },
     { path: "assignedTo", select: PERSON_FIELDS },
   ]);
+  await notifyTicketCreated(ticket, user);
   return present(ticket, user);
 };
 
 const listTickets = async (user, query) => {
-  const { status, priority, category, assignedTo, from, to, q, page, limit, sortBy, order } = query;
+  const { status, priority, category, assignedTo, sla, from, to, q, page, limit, sortBy, order } = query;
 
   const conditions = [scopeFor(user)];
   if (status) conditions.push({ status });
   if (priority) conditions.push({ priority });
   if (category) conditions.push({ category });
   if (assignedTo) conditions.push({ assignedTo: assignedTo === "unassigned" ? null : assignedTo });
+
+  // Deadlines are judged with the server's clock. SLA information is for staff only, so customers cannot filter by it.
+  const now = new Date();
+  if (sla && user.role !== ROLES.CUSTOMER) {
+    conditions.push(sla === "overdue" ? overdueFilter(now) : atRiskFilter(now));
+  }
 
   if (from || to) {
     const range = {};
@@ -120,7 +164,7 @@ const listTickets = async (user, query) => {
   ]);
 
   return {
-    tickets: tickets.map((ticket) => present(ticket, user)),
+    tickets: tickets.map((ticket) => present(ticket, user, now)),
     pagination: { page, limit, total, pages: Math.ceil(total / limit) },
   };
 };
@@ -152,6 +196,11 @@ const updateTicket = async (user, id, changes) => {
     (field) => String(ticket[field]) !== String(changes[field])
   );
 
+  // A new priority means new SLA deadlines for the clocks that are still running (see slaRules.js).
+  if (changedFields.includes("priority")) {
+    ticket.set(fieldsForPriorityChange(ticket, changes.priority));
+  }
+
   Object.assign(ticket, changes);
   await ticket.save();
 
@@ -181,16 +230,13 @@ const changeStatus = async (user, id, newStatus) => {
   }
 
   const previousStatus = ticket.status;
+  ticket.set(fieldsForStatusChange(ticket, newStatus, new Date()));
   ticket.status = newStatus;
-  if (newStatus === TICKET_STATUS.RESOLVED) {
-    ticket.resolvedAt = new Date();
-  } else if (newStatus !== TICKET_STATUS.CLOSED) {
-    ticket.resolvedAt = null;
-  }
 
   await ticket.save();
 
   emitStatusChanged(ticket, previousStatus, user);
+  await notifyStatusChanged(ticket, previousStatus, user);
   await announce(
     user,
     ticket._id,
@@ -237,6 +283,7 @@ const assignTicket = async (admin, id, agentId) => {
       ? `Ticket reassigned from ${previousAgent.name} to ${agent.name}`
       : `Ticket assigned to ${agent.name}`
   );
+  await notifyTicketAssigned(ticket, agent, admin);
 
   await ticket.populate([
     { path: "createdBy", select: PERSON_FIELDS },

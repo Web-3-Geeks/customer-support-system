@@ -8,6 +8,8 @@ const EVENTS = {
   TICKET_STATUS_CHANGED: "ticket_status_changed",
   USER_JOINED: "user_joined",
   USER_LEFT: "user_left",
+  NOTIFICATION: "notification",
+  NOTIFICATIONS_UPDATED: "notifications_updated",
 };
 
 // Payloads never depend on who is looking, because one payload goes to everyone in the room.
@@ -60,6 +62,15 @@ const emitTicketAssigned = (ticket, agent, previousAgentId, assignedBy) => {
   });
 };
 
+// Notifications go to the personal room of their owner only, so every tab of that user receives them.
+// `unreadCount` lets the client update its badge without asking the API again.
+const emitNotification = (userId, notification, unreadCount) =>
+  emitTo(userRoom(userId), EVENTS.NOTIFICATION, { notification, unreadCount });
+
+// Sent after notifications were marked as read, so the user's other tabs and devices catch up.
+const emitNotificationsUpdated = (userId, unreadCount) =>
+  emitTo(userRoom(userId), EVENTS.NOTIFICATIONS_UPDATED, { unreadCount });
+
 // Takes a user's sockets out of a ticket room (for example the agent a ticket was taken away from),
 // so they stop receiving its conversation straight away.
 const revokeTicketAccess = async (ticketId, userId) => {
@@ -91,6 +102,8 @@ module.exports = {
   emitTicketUpdated,
   emitStatusChanged,
   emitTicketAssigned,
+  emitNotification,
+  emitNotificationsUpdated,
   revokeTicketAccess,
   disconnectUser,
 };

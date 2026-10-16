@@ -9,7 +9,8 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed:admin": "node src/scripts/seedAdmin.js",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "backfill:sla": "node src/scripts/backfillSla.js"
   },
   "keywords": [],
   "author": "",

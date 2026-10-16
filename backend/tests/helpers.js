@@ -1,7 +1,10 @@
 const request = require("supertest");
 const bcrypt = require("bcryptjs");
 const app = require("../src/app");
+const mongoose = require("mongoose");
 const User = require("../src/models/User");
+const Ticket = require("../src/models/Ticket");
+const { HOUR_MS, calculateDeadlines } = require("../src/utils/slaRules");
 
 const createUserWithToken = async (role, email, name = `${role} user`) => {
   const password = await bcrypt.hash("password123", 4);
@@ -39,7 +42,37 @@ const setStatusAs = (token, ticketId, status) =>
     .set(authHeader(token))
     .send({ status });
 
+const sendMessageAs = (token, ticketId, text = "Hello, this is a message") =>
+  request(app)
+    .post(`/api/tickets/${ticketId}/messages`)
+    .set(authHeader(token))
+    .send({ message: text });
+
+const getNotifications = (token, query = "") =>
+  request(app).get(`/api/notifications${query}`).set(authHeader(token));
+
+const changePriorityAs = (token, ticketId, priority) =>
+  request(app)
+    .patch(`/api/tickets/${ticketId}`)
+    .set(authHeader(token))
+    .send({ priority });
+
+// Makes a ticket look older than it is, with the deadlines that go with its priority.
+// The write bypasses Mongoose, because createdAt cannot be changed through a model.
+const ageTicket = async (ticketId, hoursAgo, priority = "MEDIUM") => {
+  const createdAt = new Date(Date.now() - hoursAgo * HOUR_MS);
+  await Ticket.collection.updateOne(
+    { _id: new mongoose.Types.ObjectId(ticketId) },
+    { $set: { createdAt, priority, ...calculateDeadlines(createdAt, priority) } }
+  );
+  return createdAt;
+};
+
 module.exports = {
+  sendMessageAs,
+  getNotifications,
+  changePriorityAs,
+  ageTicket,
   createUserWithToken,
   authHeader,
   validTicket,

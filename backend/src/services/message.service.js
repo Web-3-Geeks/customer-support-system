@@ -6,7 +6,10 @@ const {
   MESSAGE_EDIT_WINDOW_MS,
   isWithinEditWindow,
 } = require("../utils/messageRules");
+const { ROLES } = require("../utils/constants");
 const { findTicketForUser } = require("./ticketAccess");
+const { recordFirstResponse } = require("./sla.service");
+const { notifyReply } = require("./notification.service");
 const { emitTicketMessage } = require("../socket/events");
 
 const SENDER_FIELDS = "name role";
@@ -30,6 +33,15 @@ const broadcast = (ticketId, message) => {
   return message;
 };
 
+// The message is already saved and delivered, so a problem with the SLA bookkeeping must not fail the request.
+const trackFirstResponse = async (ticket, at) => {
+  try {
+    await recordFirstResponse(ticket, at);
+  } catch (error) {
+    console.error(`Could not record first response: ${error.message}`);
+  }
+};
+
 const createMessage = async (user, ticketId, text) => {
   const ticket = await findTicketForUser(user, ticketId);
   if (ticket.status === TICKET_STATUS.CLOSED) {
@@ -42,7 +54,14 @@ const createMessage = async (user, ticketId, text) => {
     message: text,
   });
   await populateSender(message);
-  return broadcast(ticket._id, present(message));
+  const result = broadcast(ticket._id, present(message));
+
+  // Only a staff reply starts counting as the first response; the customer writing again does not.
+  if (user.role !== ROLES.CUSTOMER) {
+    await trackFirstResponse(ticket, message.createdAt);
+  }
+  await notifyReply(ticket, message, user);
+  return result;
 };
 
 // System lines ("Status changed to RESOLVED") are written by the server on behalf of whoever did the action.

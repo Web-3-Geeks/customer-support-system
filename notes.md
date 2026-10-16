@@ -150,3 +150,66 @@
 - [x] README Day 3 section
 - [x] Deploy check (Railway WebSocket + Vercel)
 - [x] week7/Day3 snapshot + commits + push
+
+---
+
+# Week 7 - Day 4: Notifications, SLA Tracking & Admin Analytics
+
+## Rules pehle tay karna (code se pehle)
+- [x] SLA targets table (priority ke hisab se first response + resolution) aur "Critical" = URGENT
+- [x] SLA clock rules (kab shuru, kya count hota hai, priority badalne par recalculation, reopen, cancelled)
+- [x] Notification recipients table (kis event par kisko, actor ko nahi) + reply grouping
+- [x] Analytics definitions (open/unresolved/resolved, averages, compliance, date range + timezone)
+- [ ] Charts library ka faisla (recharts ya hand-made SVG)
+
+## Task 1: Notifications (backend)
+- [x] Notification model (userId, ticketId, type, title, message, isRead, readAt, createdAt) + indexes + TTL (90 din)
+- [x] utils/notificationRules.js (types, recipients, titles)
+- [x] notification.service: create (best-effort, actor ko nahi), reply grouping, list (page, limit, unread), markRead, markAllRead (optional ticketId)
+- [x] Events se hook: ticket create, assign, new reply, status change, resolved
+- [x] Real-time: socket event "notification" -> user:<id> room (payload + unreadCount)
+- [x] GET /api/notifications, PATCH /api/notifications/:id/read, PATCH /api/notifications/read-all
+- [x] Validators + routes + controller
+
+## Task 2: SLA tracking (backend)
+- [x] utils/slaRules.js (targets, at-risk threshold, pure calculation functions)
+- [x] Ticket model: firstResponseDueAt, resolutionDueAt, firstResponseAt, results (met/breached) + indexes
+- [x] Ticket create par deadlines set karna
+- [x] Priority change par pending deadlines recalculate (documented rule)
+- [x] First response record karna (pehla agent/admin TEXT message, atomic)
+- [x] Resolution record karna (RESOLVED par, reopen par clear)
+- [x] API response mein sla block (server time ke saath: dueAt, remaining, status ON_TRACK / AT_RISK / BREACHED / MET)
+- [x] Ticket list par sla filter (overdue / at_risk) + overdue count
+- [x] SLA worker (background interval, atomic claim, at-risk + breach notifications, tests ke liye now inject)
+- [x] Backfill script purane tickets ke liye (idempotent)
+
+## Task 3: Admin analytics (aggregation)
+- [x] GET /api/admin/analytics/overview
+- [x] GET /api/admin/analytics/tickets (over time + by priority/status)
+- [x] GET /api/admin/analytics/agents
+- [x] GET /api/admin/analytics/sla
+- [x] Date range + timezone validation, range limit, indexes
+
+## Tests (backend)
+- [x] SLA calculation tests (targets, recalculation, milestones, cancelled)
+- [x] Notification tests (recipients, grouping, read/unread, read-all, scope)
+- [x] SLA worker tests (idempotent, at-risk, breach)
+- [x] Analytics tests (seeded data, averages, compliance, date range, non-admin 403)
+- [x] Socket test: notification delivery
+
+## Frontend
+- [ ] notificationApi + analyticsApi + hooks (useNotifications, useAnalytics)
+- [ ] Notification bell + unread badge + dropdown (real-time, mark read, mark all read)
+- [ ] Notifications page (full list, pagination)
+- [ ] SlaBadge on ticket lists + SLA card on ticket detail (server-time corrected countdown)
+- [ ] Overdue / at-risk filter + admin overdue card
+- [ ] Admin Analytics page: date-range filter, stat cards, charts
+- [ ] Loading, empty, error states everywhere
+
+## Closing
+- [ ] Lint + build + tests (backend + frontend)
+- [ ] Audit (a11y, edge cases, security, indexes)
+- [ ] Postman collection update (notifications + analytics)
+- [ ] README Day 4 section (SLA rules, notification types, analytics definitions)
+- [ ] Deploy check (Railway worker + sockets, Vercel)
+- [ ] week7/Day4 snapshot + commits + push

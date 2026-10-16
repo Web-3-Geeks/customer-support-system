@@ -79,6 +79,8 @@ const listTicketsSchema = z.object({
       priority: priority.optional(),
       category: category.optional(),
       assignedTo: z.union([objectId, z.literal("unassigned")]).optional(),
+      // Staff only: tickets with a running SLA clock that is overdue, or close to its deadline.
+      sla: z.enum(["overdue", "at_risk"], { error: "sla must be overdue or at_risk" }).optional(),
       from: dateParam.optional(),
       to: dateParam.optional(),
       q: z.string().trim().max(100, "Search text is too long").optional(),
