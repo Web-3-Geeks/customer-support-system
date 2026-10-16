@@ -86,6 +86,10 @@
     {
       "key": "agentMessageId",
       "value": ""
+    },
+    {
+      "key": "notificationId",
+      "value": ""
     }
   ],
   "item": [
@@ -2960,7 +2964,744 @@
       ]
     },
     {
-      "name": "7. Finish",
+      "name": "7. Notifications",
+      "description": "Run after the conversation folder so there is something to read. Everyone only ever sees their own notifications. NEW_REPLY notifications are grouped: one unread entry per ticket with a `count`. A notification is deleted automatically 90 days after its last event.\n\nTypes: TICKET_CREATED, TICKET_ASSIGNED, STATUS_CHANGED, NEW_REPLY, SLA_AT_RISK, SLA_BREACHED.",
+      "item": [
+        {
+          "name": "List my notifications (agent)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications?limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{agentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Has items and an unread count\", function () { pm.expect(body.data).to.be.an(\"array\"); pm.expect(body.unreadCount).to.be.a(\"number\"); });",
+                  "if (body.data.length) pm.collectionVariables.set(\"notificationId\", body.data[0]._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List only unread",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications?unread=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "unread",
+                  "value": "true"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{agentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"All unread\", function () { pm.response.json().data.forEach(n => pm.expect(n.isRead).to.eql(false)); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject page size above 50 (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications?limit=51",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "51"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{agentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark one as read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{agentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark all as read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "read-all"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{agentToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark all read for one ticket",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "read-all"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{agentToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ticketId\": \"{{ticketId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Someone else's notification is not found (404)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8. Admin - Analytics",
+      "description": "Admin only. Figures describe tickets created in the range (default: last 30 days, at most 366 days). The `current` figures (overdue, at risk, unassigned, open now) are right now, across all dates. `tz` may be any IANA name in any letter case; days and weeks are cut in it.",
+      "item": [
+        {
+          "name": "Overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/overview?from=2026-01-01&to=2026-12-31&tz=Asia/Karachi",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "overview"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-12-31"
+                },
+                {
+                  "key": "tz",
+                  "value": "Asia/Karachi"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tickets over time",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/tickets?from=2026-01-01&to=2026-12-31&tz=Asia/Karachi&interval=week",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "tickets"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-12-31"
+                },
+                {
+                  "key": "tz",
+                  "value": "Asia/Karachi"
+                },
+                {
+                  "key": "interval",
+                  "value": "week"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Has a time zone\", function () { pm.expect(pm.response.json().data.timeZone).to.eql(\"Asia/Karachi\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agent performance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/agents?from=2026-01-01&to=2026-12-31&tz=Asia/Karachi",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "agents"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-12-31"
+                },
+                {
+                  "key": "tz",
+                  "value": "Asia/Karachi"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SLA performance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/sla?from=2026-01-01&to=2026-12-31&tz=Asia/Karachi",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "sla"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-12-31"
+                },
+                {
+                  "key": "tz",
+                  "value": "Asia/Karachi"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lower-case time zone is accepted",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/tickets?tz=asia/karachi",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "tickets"
+              ],
+              "query": [
+                {
+                  "key": "tz",
+                  "value": "asia/karachi"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown time zone (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/tickets?tz=Mars/Olympus",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "tickets"
+              ],
+              "query": [
+                {
+                  "key": "tz",
+                  "value": "Mars/Olympus"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Range longer than a year (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/overview?from=2024-01-01&to=2026-03-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "overview"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-03-01"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agent cannot read analytics (403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/overview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "overview"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{agentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 403\", function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "9. Finish",
       "description": "Closing a ticket is final, so these run last.",
       "item": [
         {
@@ -3183,8 +3924,8 @@
       ]
     },
     {
-      "name": "8. Real-time (Socket.IO)",
-      "description": "Postman cannot import Socket.IO requests, so use a Socket.IO client (Postman's own Socket.IO request type, or the browser/Node client) against `{{serverUrl}}`.\n\nCONNECT: send the JWT in the handshake auth object, not in the URL: `{ \"auth\": { \"token\": \"<customerToken>\" } }`. A missing, invalid or expired token is rejected with the error `Not authenticated`.\n\nCLIENT EVENTS (with an acknowledgement callback):\n- `join_ticket` with `{ \"ticketId\": \"<id>\" }`. The ack is `{ ok: true, participants: [...] }`, or `{ ok: false, message }`. Only the ticket's customer, its assigned agent and admins can join; everyone else gets `Ticket not found`.\n- `leave_ticket` with `{ \"ticketId\": \"<id>\" }`.\n\nSERVER EVENTS:\n- `ticket_message` `{ ticketId, message }`: a new message, a system line, or an edited message (same `_id`, so replace it instead of adding it). Sent only after the message is saved.\n- `ticket_updated` `{ ticketId, changedFields, updatedBy }`.\n- `ticket_status_changed` `{ ticketId, ticketNumber, from, to, resolvedAt, changedBy }`.\n- `ticket_assigned` `{ ticketId, ticketNumber, subject, assignedTo, previousAssignee, assignedBy }`. Also delivered to the new and the previous agent without joining the ticket room.\n- `user_joined` / `user_left` `{ ticketId, user: { id, name, role } }`. One person with several tabs counts once.\n\nPayloads are the same for everyone in the room, so they only say what changed; fetch the ticket again for role specific data such as allowedNextStatuses.\n\nTo watch it live: connect two clients (customer and agent), join the same ticket on both, then run the 'Send message' requests in folder 6.",
+      "name": "10. Real-time (Socket.IO)",
+      "description": "Postman cannot import Socket.IO requests, so use a Socket.IO client (Postman's own Socket.IO request type, or the browser/Node client) against `{{serverUrl}}`.\n\nCONNECT: send the JWT in the handshake auth object, not in the URL: `{ \"auth\": { \"token\": \"<customerToken>\" } }`. A missing, invalid or expired token is rejected with the error `Not authenticated`.\n\nCLIENT EVENTS (with an acknowledgement callback):\n- `join_ticket` with `{ \"ticketId\": \"<id>\" }`. The ack is `{ ok: true, participants: [...] }`, or `{ ok: false, message }`. Only the ticket's customer, its assigned agent and admins can join; everyone else gets `Ticket not found`.\n- `leave_ticket` with `{ \"ticketId\": \"<id>\" }`.\n\nSERVER EVENTS:\n- `ticket_message` `{ ticketId, message }`: a new message, a system line, or an edited message (same `_id`, so replace it instead of adding it). Sent only after the message is saved.\n- `ticket_updated` `{ ticketId, changedFields, updatedBy }`.\n- `ticket_status_changed` `{ ticketId, ticketNumber, from, to, resolvedAt, changedBy }`.\n- `ticket_assigned` `{ ticketId, ticketNumber, subject, assignedTo, previousAssignee, assignedBy }`. Also delivered to the new and the previous agent without joining the ticket room.\n- `user_joined` / `user_left` `{ ticketId, user: { id, name, role } }`. One person with several tabs counts once.\n\nPayloads are the same for everyone in the room, so they only say what changed; fetch the ticket again for role specific data such as allowedNextStatuses.\n\nTo watch it live: connect two clients (customer and agent), join the same ticket on both, then run the 'Send message' requests in folder 6.\n\nNOTIFICATION EVENTS (delivered to your own user room automatically, no join needed): `notification` `{ notification, unreadCount }` for a new or updated (grouped) notification, and `notifications_updated` `{ unreadCount }` when notifications were marked read or removed.",
       "item": []
     }
   ]

@@ -11,13 +11,19 @@ import { ticketApi } from "../api/ticketApi";
 import { usePageTitle } from "../hooks/usePageTitle";
 
 const STATUSES = ["IN_PROGRESS", "WAITING_FOR_CUSTOMER", "RESOLVED"];
+const SLA_STATES = ["overdue", "at_risk"];
 
 function AgentDashboard() {
   usePageTitle("Dashboard");
   const { user } = useAuth();
-  const { counts, total, recent, loading, error } = useTicketSummary(ticketApi.list, STATUSES);
+  const { counts, slaCounts, total, recent, loading, error } = useTicketSummary(
+    ticketApi.list,
+    STATUSES,
+    SLA_STATES
+  );
 
   const value = (status) => (loading ? "-" : (counts[status] ?? 0));
+  const slaValue = (state) => (loading ? "-" : (slaCounts[state] ?? 0));
 
   return (
     <>
@@ -32,11 +38,24 @@ function AgentDashboard() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label="Assigned to me" value={loading ? "-" : total} hint="All tickets" />
         <StatCard label="In progress" value={value("IN_PROGRESS")} hint="You are working on these" />
         <StatCard label="Waiting on customer" value={value("WAITING_FOR_CUSTOMER")} hint="Replied, no answer yet" />
         <StatCard label="Resolved" value={value("RESOLVED")} hint="Waiting for customer confirmation" />
+        <StatCard
+          label="Overdue"
+          value={slaValue("overdue")}
+          hint="Past an SLA deadline. Open the list."
+          to="/agent/tickets?sla=overdue"
+          tone="danger"
+        />
+        <StatCard
+          label="At risk"
+          value={slaValue("at_risk")}
+          hint="Close to an SLA deadline. Open the list."
+          to="/agent/tickets?sla=at_risk"
+        />
       </div>
 
       <section className="mt-8" aria-labelledby="recent-assigned">
@@ -56,7 +75,7 @@ function AgentDashboard() {
             text="Tickets an admin assigns to you will show up here."
           />
         ) : (
-          <TicketTable tickets={recent} basePath="/agent/tickets" showCustomer />
+          <TicketTable tickets={recent} basePath="/agent/tickets" showCustomer showSla />
         )}
       </section>
     </>

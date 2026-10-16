@@ -160,7 +160,7 @@
 - [x] SLA clock rules (kab shuru, kya count hota hai, priority badalne par recalculation, reopen, cancelled)
 - [x] Notification recipients table (kis event par kisko, actor ko nahi) + reply grouping
 - [x] Analytics definitions (open/unresolved/resolved, averages, compliance, date range + timezone)
-- [ ] Charts library ka faisla (recharts ya hand-made SVG)
+- [x] Charts library ka faisla (recharts ya hand-made SVG)
 
 ## Task 1: Notifications (backend)
 - [x] Notification model (userId, ticketId, type, title, message, isRead, readAt, createdAt) + indexes + TTL (90 din)
@@ -198,18 +198,18 @@
 - [x] Socket test: notification delivery
 
 ## Frontend
-- [ ] notificationApi + analyticsApi + hooks (useNotifications, useAnalytics)
-- [ ] Notification bell + unread badge + dropdown (real-time, mark read, mark all read)
-- [ ] Notifications page (full list, pagination)
-- [ ] SlaBadge on ticket lists + SLA card on ticket detail (server-time corrected countdown)
-- [ ] Overdue / at-risk filter + admin overdue card
-- [ ] Admin Analytics page: date-range filter, stat cards, charts
-- [ ] Loading, empty, error states everywhere
+- [x] notificationApi + analyticsApi + hooks (useNotifications, useAnalytics)
+- [x] Notification bell + unread badge + dropdown (real-time, mark read, mark all read)
+- [x] Notifications page (full list, pagination)
+- [x] SlaBadge on ticket lists + SLA card on ticket detail (server-time corrected countdown)
+- [x] Overdue / at-risk filter + admin overdue card
+- [x] Admin Analytics page: date-range filter, stat cards, charts
+- [x] Loading, empty, error states everywhere
 
 ## Closing
-- [ ] Lint + build + tests (backend + frontend)
-- [ ] Audit (a11y, edge cases, security, indexes)
-- [ ] Postman collection update (notifications + analytics)
-- [ ] README Day 4 section (SLA rules, notification types, analytics definitions)
+- [x] Lint + build + tests (backend + frontend)
+- [x] Audit (a11y, edge cases, security, indexes)
+- [x] Postman collection update (notifications + analytics)
+- [x] README Day 4 section (SLA rules, notification types, analytics definitions)
 - [ ] Deploy check (Railway worker + sockets, Vercel)
 - [ ] week7/Day4 snapshot + commits + push

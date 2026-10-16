@@ -3,6 +3,8 @@ import { Link, useParams } from "react-router-dom";
 import { adminApi } from "../api/adminApi";
 import { ticketApi } from "../api/ticketApi";
 import { useAuth } from "../context/useAuth";
+import { useNotifications } from "../context/useNotifications";
+import { useSocket } from "../context/useSocket";
 import { getErrorMessage } from "../utils/getErrorMessage";
 import { ROLES } from "../utils/roles";
 import {
@@ -22,6 +24,7 @@ import Select from "../components/Select";
 import Textarea from "../components/Textarea";
 import StatusBadge from "../components/StatusBadge";
 import PriorityBadge from "../components/PriorityBadge";
+import SlaCard from "../components/SlaCard";
 import FullPageLoader from "../components/FullPageLoader";
 import { usePageTitle } from "../hooks/usePageTitle";
 
@@ -63,6 +66,10 @@ function TicketDetailContent({ id }) {
   const closeTriggerRef = useRef(null);
   const confirmWasOpen = useRef(false);
   const subjectInputRef = useRef(null);
+  const ticketRef = useRef(null);
+  const { markAllRead } = useNotifications();
+  const markAllReadRef = useRef(markAllRead);
+  const { socket } = useSocket();
 
   usePageTitle(ticket ? ticket.ticketNumber : "Ticket");
 
@@ -80,6 +87,38 @@ function TicketDetailContent({ id }) {
   useEffect(() => {
     if (editing) subjectInputRef.current?.focus();
   }, [editing]);
+
+  useEffect(() => {
+    ticketRef.current = ticket;
+    markAllReadRef.current = markAllRead;
+  });
+
+  // Opening a ticket reads the notifications that were about it.
+  useEffect(() => {
+    markAllReadRef.current({ ticketId: id });
+  }, [id]);
+
+  // The first staff reply stops the first-response SLA clock on the server, so fetch the ticket again to show it.
+  useEffect(() => {
+    if (!socket) return;
+
+    const onMessage = (payload) => {
+      const current = ticketRef.current;
+      const waiting = current?.sla && !current.sla.firstResponse.achievedAt;
+      const fromStaff = payload?.message?.senderId?.role !== "CUSTOMER";
+      if (payload?.ticketId !== id || !waiting || !fromStaff || payload.message.messageType !== "TEXT") return;
+
+      ticketApi
+        .get(id)
+        .then(({ data }) => setTicket(data.data.ticket))
+        .catch(() => {
+          // the next change to the ticket refreshes it anyway
+        });
+    };
+
+    socket.on("ticket_message", onMessage);
+    return () => socket.off("ticket_message", onMessage);
+  }, [socket, id]);
 
   useEffect(() => {
     let ignore = false;
@@ -350,6 +389,8 @@ function TicketDetailContent({ id }) {
         </section>
 
         <aside className="space-y-4" aria-label="Manage ticket">
+          {ticket.sla && <SlaCard key={ticket.sla.serverTime} sla={ticket.sla} />}
+
           <div className="rounded-3xl bg-white/80 p-6 shadow-sm ring-1 ring-black/5">
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">Manage</h2>
 

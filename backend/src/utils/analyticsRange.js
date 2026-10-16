@@ -20,6 +20,11 @@ const isValidTimeZone = (timeZone) => {
   }
 };
 
+// JavaScript accepts "asia/karachi" or "utc" in any letter case, but the database only knows the exact names
+// ("Asia/Karachi", "UTC"), so the name is always passed on in its official spelling.
+const canonicalTimeZone = (timeZone) =>
+  new Intl.DateTimeFormat("en-US", { timeZone }).resolvedOptions().timeZone;
+
 // "YYYY-MM-DD" of a moment as seen in a time zone.
 const localDate = (date, timeZone) =>
   new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
@@ -60,5 +65,6 @@ module.exports = {
   MAX_RANGE_DAYS,
   resolveRange,
   isValidTimeZone,
+  canonicalTimeZone,
   bucketKeys,
 };

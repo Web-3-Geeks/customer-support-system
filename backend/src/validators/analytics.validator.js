@@ -1,6 +1,12 @@
 const { z } = require("zod");
 const { isValidDateParam } = require("../utils/dateRange");
-const { DAY_MS, MAX_RANGE_DAYS, resolveRange, isValidTimeZone } = require("../utils/analyticsRange");
+const {
+  DAY_MS,
+  MAX_RANGE_DAYS,
+  resolveRange,
+  isValidTimeZone,
+  canonicalTimeZone,
+} = require("../utils/analyticsRange");
 
 const dateParam = z.string().refine(isValidDateParam, "Use YYYY-MM-DD or an ISO 8601 timestamp");
 
@@ -8,7 +14,7 @@ const rangeFields = {
   from: dateParam.optional(),
   to: dateParam.optional(),
   // Days and weeks are cut in this time zone, so "today" means today for the person looking at the chart.
-  tz: z.string().refine(isValidTimeZone, "Unknown time zone").default("UTC"),
+  tz: z.string().refine(isValidTimeZone, "Unknown time zone").transform(canonicalTimeZone).default("UTC"),
 };
 
 // The same defaults as the service, so the limit applies to the range that will really be used.

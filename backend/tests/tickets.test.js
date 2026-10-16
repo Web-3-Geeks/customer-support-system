@@ -691,6 +691,8 @@ describe("search, filtering, sorting and pagination", () => {
   it("rejects page sizes above the limit and invalid values", async () => {
     expect((await list(users.admin.token, "?limit=51")).status).toBe(400);
     expect((await list(users.admin.token, "?page=0")).status).toBe(400);
+    expect((await list(users.admin.token, "?page=10001")).status).toBe(400);
+    expect((await list(users.admin.token, "?q=%00")).status).toBe(400);
     expect((await list(users.admin.token, "?status=DONE")).status).toBe(400);
     expect((await list(users.admin.token, "?sortBy=password")).status).toBe(400);
   });

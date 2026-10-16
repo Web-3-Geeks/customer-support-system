@@ -1,5 +1,6 @@
 const Ticket = require("../models/Ticket");
 const User = require("../models/User");
+const AppError = require("../utils/AppError");
 const { ROLES } = require("../utils/constants");
 const { TICKET_STATUS, TICKET_PRIORITY, TICKET_CATEGORY } = require("../utils/ticketRules");
 const { ACTIVE_STATUSES, SLA_TARGETS } = require("../utils/slaRules");
@@ -297,4 +298,21 @@ const getSlaStats = async (query) => {
   };
 };
 
-module.exports = { getOverview, getTicketStats, getAgentStats, getSlaStats };
+// A last line of defence: if the database still does not recognise a time zone name, that is the caller's mistake.
+const withTimeZoneErrors = (loader) => async (query) => {
+  try {
+    return await loader(query);
+  } catch (error) {
+    if (error.codeName === "Location40485") {
+      throw new AppError("Unknown time zone", 400);
+    }
+    throw error;
+  }
+};
+
+module.exports = {
+  getOverview,
+  getTicketStats: withTimeZoneErrors(getTicketStats),
+  getAgentStats,
+  getSlaStats,
+};

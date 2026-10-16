@@ -1,4 +1,4 @@
-import { HomeIcon, PlusIcon, SettingsIcon, TicketIcon, UsersIcon } from "../components/icons";
+import { ChartIcon, HomeIcon, PlusIcon, SettingsIcon, TicketIcon, UsersIcon } from "../components/icons";
 
 // `soon: true` items are placeholders for features that are not built yet.
 // `end: true` makes the link active only on its exact path, not on nested pages.
@@ -15,6 +15,7 @@ export const NAV_ITEMS = {
   ADMIN: [
     { label: "Users", to: "/admin", icon: UsersIcon, end: true },
     { label: "Tickets", to: "/admin/tickets", icon: TicketIcon },
+    { label: "Analytics", to: "/admin/analytics", icon: ChartIcon },
     { label: "Settings", icon: SettingsIcon, soon: true },
   ],
 };

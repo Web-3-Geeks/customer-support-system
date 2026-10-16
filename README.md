@@ -71,6 +71,51 @@ Week 7 internship project. A full-stack support platform with customers, support
 - Loading, empty, error (with retry) and closed-ticket (read only) states.
 - The ticket page reacts to changes made by other people: it fetches the ticket again and says what happened ("Aisha Agent changed the status to Resolved."). Ticket lists refresh when a ticket is assigned to the user.
 
+## What was built on Day 4
+
+### Backend
+- **SLA tracking** (`utils/slaRules.js`, pure functions). Every ticket gets two deadlines when it is created: a first-response deadline and a resolution deadline. They are counted in calendar hours from creation and depend on the priority, and they are recalculated when the priority changes:
+
+  | Priority | First response | Resolution |
+  |---|---|---|
+  | URGENT (critical) | 1 hour | 4 hours |
+  | HIGH | 4 hours | 24 hours |
+  | MEDIUM | 8 hours | 48 hours |
+  | LOW | 24 hours | 120 hours |
+
+  The SLA status is `ON_TRACK`, `AT_RISK` (a quarter of the time or less is left), `BREACHED`, `MET`, `MISSED` or `NOT_APPLICABLE`. The first staff reply stops the first-response clock; resolving the ticket stops the resolution clock. Staff get an `sla` block on tickets (with `serverTime`, so the browser counts from the server's clock); customers never see SLA data.
+- **SLA worker** (`services/slaWorker.js`): every 60 seconds (`SLA_CHECK_INTERVAL_MS`) it finds tickets that became at risk or breached and notifies the assigned agent and the admins. Each alert is claimed with one atomic update, so it is sent at most once, even with several server instances. On start-up old tickets without deadlines are backfilled (`npm run backfill:sla` does the same by hand); alerts for deadlines that had already passed are marked as sent so nobody is flooded.
+- **Notifications** (`Notification` model, `/api/notifications`). The person who caused an event is never notified about it. Types: `TICKET_CREATED` (admins), `TICKET_ASSIGNED` (the new agent and the customer), `STATUS_CHANGED` (the customer, and the assigned agent when someone else changed it), `NEW_REPLY` (the other side of the conversation), `SLA_AT_RISK` and `SLA_BREACHED` (assigned agent and admins).
+
+  Replies are grouped: one unread `NEW_REPLY` per user and ticket, with a `count`. Notifications are created on a best-effort basis (a failure is logged and never fails the action), are pushed live through the socket (`notification`, `notifications_updated`), expire 90 days after their last event, and when a ticket is reassigned the previous agent's notifications about it are removed.
+- **Admin analytics** (`/api/admin/analytics/*`, MongoDB aggregation only): overview, tickets over time (day / week / month), agent performance and SLA performance. Query: `from`, `to` (`YYYY-MM-DD` or an ISO timestamp), `tz` (any IANA time zone, any letter case) and `interval`. Default range is the last 30 days, the maximum is 366 days. Figures describe tickets created in the range, except the "right now" figures (overdue, at risk, unassigned, open), which are across all dates.
+- New indexes for the SLA queries, and a shared page limit (`page` at most 10 000).
+
+### Frontend
+- A notification bell in the header of every dashboard with an unread badge, a dropdown with the latest notifications ("Mark all as read", "View all"), a full notifications page for each role, live updates, and a screen-reader announcement for each new notification. Escape and tabbing out close the dropdown.
+- SLA for staff: a badge on ticket lists, an SLA card on the ticket page (time left or overdue by, counted from the server's clock), an SLA filter, and "Overdue" / "At risk" cards on the agent dashboard that link to the filtered lists.
+- An admin Analytics page with a date-range picker and charts built with Recharts: tickets over time, status, priority and category breakdowns, agent performance and SLA performance. It is loaded lazily, so it does not make the other pages heavier.
+
+### API added on Day 4
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET | `/api/notifications` | Authenticated | My notifications. Query: `page`, `limit` (max 50), `unread=true` or `false`. Returns `unreadCount` too |
+| PATCH | `/api/notifications/:id/read` | Owner | Mark one as read |
+| PATCH | `/api/notifications/read-all` | Authenticated | Mark all as read; optional `{ ticketId }` limits it to one ticket |
+| GET | `/api/admin/analytics/overview` | `ADMIN` | Totals, rates, response and resolution times, and the "right now" figures |
+| GET | `/api/admin/analytics/tickets` | `ADMIN` | Created / resolved per day, week or month, plus status, priority and category breakdowns |
+| GET | `/api/admin/analytics/agents` | `ADMIN` | Per-agent workload and performance |
+| GET | `/api/admin/analytics/sla` | `ADMIN` | SLA met / missed by priority and overall |
+
+### Audit fixes (found by sending hostile input to the real app)
+- A search text with a control character (such as a null byte) crashed the search and answered 500; it is now rejected with 400.
+- A time zone in the wrong letter case (`utc`, `asia/karachi`) made the aggregation fail with a 500; it is now accepted and converted to its official name, and an unknown name from the database is mapped to a 400.
+- Absurd page numbers are capped (`page` at most 10 000) on the ticket and notification lists.
+- The previous agent no longer keeps notifications (with message previews) about a ticket that was reassigned away from them.
+- Accessibility: a notification with the same text twice is announced twice; the bell dropdown closes when keyboard focus leaves it.
+- `npm audit --omit=dev` is clean for both apps, and no secrets are tracked in git.
+
 ## Conversation rules
 
 | Rule | Behaviour |
@@ -235,6 +280,7 @@ npm run dev                 # http://localhost:5173
 | `JWT_SECRET` | Long random string used to sign tokens |
 | `JWT_EXPIRES_IN` | Token lifetime, e.g. `7d` |
 | `CLIENT_URL` | Allowed frontend origin for CORS (no trailing slash) |
+| `SLA_CHECK_INTERVAL_MS` | Optional. How often the SLA worker checks for at-risk and breached tickets (default 60000) |
 | `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Used only by the seed script |
 
 To reset the admin password later: set `ADMIN_PASSWORD` and run `npm run seed:admin -- --reset-password`.
@@ -249,13 +295,13 @@ To reset the admin password later: set `ADMIN_PASSWORD` and run `npm run seed:ad
 ## Tests
 
 ```bash
-cd backend && npm test      # 159 tests: auth, RBAC, tickets, status rules, assignment, search/filter/pagination, messages, sockets, rate limiting
-cd frontend && npm test     # 84 tests: route guards, forms, ticket lists, ticket detail per role, conversation panel, live updates, admin dashboard, accessibility
+cd backend && npm test      # 335 tests: auth, RBAC, tickets, status rules, assignment, search/filter/pagination, messages, sockets, rate limiting, SLA rules and worker, notifications, analytics
+cd frontend && npm test     # 202 tests: route guards, forms, ticket lists, ticket detail per role, conversation panel, live updates, notifications, SLA badges, analytics page, accessibility
 ```
 
 Backend tests run against `mongodb-memory-server`, so they never touch the real database. The first run downloads a MongoDB binary and can take a minute. The socket tests start a real Socket.IO server on a free port and connect real clients to it (connection rules, room access, broadcasts, presence, reassignment, reconnection, role changes).
 
-The Postman collection (`backend/SupportDesk.postman_collection.json`) has 58 requests with assertions. Import it, set `adminPassword`, and run the folders in order; it passed completely against a throwaway server when it was written.
+The Postman collection (`backend/SupportDesk.postman_collection.json`) has 73 requests with assertions. Import it, set `adminPassword`, and run the folders in order; it passed completely against a throwaway server when it was written.
 
 ## Deployment
 
@@ -300,3 +346,7 @@ frontend/
 - Messages are plain text only (no attachments, no formatting), cannot be deleted, and there are no read receipts or typing indicators.
 - Tickets cannot be unassigned (only reassigned) and cannot be deleted; they are closed instead.
 - Admin settings are not built yet; that menu item is marked "Soon".
+- SLA clocks run in calendar hours and are not paused while the ticket waits for the customer. The worker's alerts are at-most-once: if the server is down at the exact moment, that one alert is not repeated.
+- Customers cannot see SLA data (on purpose), and ticket lists can be filtered by SLA state but not sorted by urgency.
+- The SLA worker runs inside the web process. Several instances are safe (alerts are claimed atomically), but a separate worker service would be cleaner at scale.
+- Analytics are computed live from the tickets on every request, with no cache; that is fine at this size.

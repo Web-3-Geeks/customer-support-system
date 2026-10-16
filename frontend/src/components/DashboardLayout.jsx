@@ -3,10 +3,13 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import Sidebar from "./Sidebar";
 import Logo from "./Logo";
+import NotificationBell from "./NotificationBell";
+import { useNotifications } from "../context/useNotifications";
 import { MenuIcon } from "./icons";
 
 function DashboardLayout() {
   const { user, logout } = useAuth();
+  const { announcement } = useNotifications();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -47,17 +50,27 @@ function DashboardLayout() {
       )}
 
       <div className="lg:pl-72">
-        <header className="mb-6 flex items-center justify-between rounded-2xl bg-white/90 px-4 py-3 shadow-sm ring-1 ring-black/5 backdrop-blur lg:hidden">
-          <Logo to="/" />
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open menu"
-            className="rounded-lg p-2 text-ink hover:bg-slate-100"
-          >
-            <MenuIcon />
-          </button>
+        <header className="mb-6 flex items-center justify-between gap-2 rounded-2xl bg-white/90 px-4 py-3 shadow-sm ring-1 ring-black/5 backdrop-blur lg:mb-2 lg:justify-end lg:bg-transparent lg:px-4 lg:py-0 lg:shadow-none lg:ring-0 lg:backdrop-blur-none">
+          <div className="lg:hidden">
+            <Logo to="/" />
+          </div>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Open menu"
+              className="rounded-lg p-2 text-ink hover:bg-slate-100 lg:hidden"
+            >
+              <MenuIcon />
+            </button>
+          </div>
         </header>
+
+        {/* Screen readers hear about new notifications without the page moving. */}
+        <div role="status" aria-live="polite" className="sr-only">
+          <span key={announcement.id}>{announcement.text}</span>
+        </div>
 
         <main id="main-content" tabIndex={-1} className="mx-auto max-w-6xl px-1 py-2 focus:outline-none lg:px-4 lg:py-4">
           <Outlet />

@@ -26,6 +26,7 @@ const {
   notifyTicketCreated,
   notifyTicketAssigned,
   notifyStatusChanged,
+  removeTicketNotifications,
 } = require("./notification.service");
 const {
   emitTicketUpdated,
@@ -275,6 +276,7 @@ const assignTicket = async (admin, id, agentId) => {
   emitTicketAssigned(ticket, agent, previousAgentId, admin);
   if (previousAgentId) {
     await revokeTicketAccess(ticket._id, previousAgentId);
+    await removeTicketNotifications(previousAgentId, ticket._id);
   }
   await announce(
     admin,

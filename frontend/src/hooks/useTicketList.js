@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSocket } from "../context/useSocket";
 import { getErrorMessage } from "../utils/getErrorMessage";
+import { endOfLocalDay, startOfLocalDay } from "../utils/dates";
 
 export const PAGE_SIZE = 10;
-
-// The date inputs hold the user local day; the API compares UTC timestamps.
-const startOfLocalDay = (date) => new Date(`${date}T00:00:00`).toISOString();
-const endOfLocalDay = (date) => new Date(`${date}T23:59:59.999`).toISOString();
 
 const DEFAULT_FILTERS = {
   q: "",
@@ -14,6 +11,7 @@ const DEFAULT_FILTERS = {
   priority: "",
   category: "",
   assignedTo: "",
+  sla: "",
   from: "",
   to: "",
   sortBy: "createdAt",
@@ -21,9 +19,9 @@ const DEFAULT_FILTERS = {
   page: 1,
 };
 
-export function useTicketList(fetchTickets) {
+export function useTicketList(fetchTickets, initialFilters = {}) {
   const { socket } = useSocket();
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState({ ...DEFAULT_FILTERS, ...initialFilters });
   const [result, setResult] = useState({ tickets: [], pagination: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

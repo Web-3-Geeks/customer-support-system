@@ -3,12 +3,13 @@ const {
   DEFAULT_NOTIFICATION_LIMIT,
   MAX_NOTIFICATION_LIMIT,
 } = require("../utils/notificationRules");
+const { MAX_PAGE } = require("../utils/pagination");
 
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid id");
 
 const listNotificationsSchema = z.object({
   query: z.object({
-    page: z.coerce.number().int().min(1).default(1),
+    page: z.coerce.number().int().min(1).max(MAX_PAGE).default(1),
     limit: z.coerce.number().int().min(1).max(MAX_NOTIFICATION_LIMIT).default(DEFAULT_NOTIFICATION_LIMIT),
     unread: z
       .enum(["true", "false"], { error: "unread must be true or false" })

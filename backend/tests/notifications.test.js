@@ -87,7 +87,17 @@ describe("who is notified", () => {
     await assignTicketAs(users.admin.token, id, users.agent2.user._id);
 
     expect(await ofType(users.agent2, "TICKET_ASSIGNED")).toHaveLength(1);
-    expect(await ofType(users.agent, "TICKET_ASSIGNED")).toHaveLength(1); // only the first assignment
+  });
+
+  it("removes the previous agent's notifications about a ticket they lost", async () => {
+    const users = await setup();
+    const id = await assigned(users);
+    expect(await ofType(users.agent, "TICKET_ASSIGNED")).toHaveLength(1);
+
+    await assignTicketAs(users.admin.token, id, users.agent2.user._id);
+
+    expect(await ofType(users.agent, "TICKET_ASSIGNED")).toHaveLength(0);
+    expect((await getNotifications(users.agent.token)).body.unreadCount).toBe(0);
   });
 
   it("tells the assigned agent about a customer's reply, and nobody else", async () => {
@@ -330,6 +340,7 @@ describe("GET /api/notifications", () => {
     expect((await getNotifications(users.admin.token, "?limit=51")).status).toBe(400);
     expect((await getNotifications(users.admin.token, "?limit=0")).status).toBe(400);
     expect((await getNotifications(users.admin.token, "?page=0")).status).toBe(400);
+    expect((await getNotifications(users.admin.token, "?page=10001")).status).toBe(400);
     expect((await getNotifications(users.admin.token, "?unread=maybe")).status).toBe(400);
   });
 });

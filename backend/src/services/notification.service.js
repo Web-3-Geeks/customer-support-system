@@ -228,6 +228,15 @@ const notifySlaAlert = async (ticket, clock, breached) => {
   await deliver(recipients.map((userId) => entryFor(userId, ticket, type, title, message)));
 };
 
+// A user who lost access to a ticket (it was reassigned to someone else) must not keep notifications about it:
+// they contain previews of the conversation they can no longer open.
+const removeTicketNotifications = async (userId, ticketId) => {
+  const result = await Notification.deleteMany({ userId, ticketId });
+  if (result.deletedCount > 0) {
+    emitNotificationsUpdated(userId, await unreadCountFor(userId));
+  }
+};
+
 // ------------------------------------------------------------------ reading and marking
 
 const list = async (user, { page, limit, unread }) => {
@@ -290,6 +299,7 @@ module.exports = {
   notifyReply: bestEffort("reply", notifyReply),
   notifyStatusChanged: bestEffort("status changed", notifyStatusChanged),
   notifySlaAlert: bestEffort("sla alert", notifySlaAlert),
+  removeTicketNotifications: bestEffort("remove ticket notifications", removeTicketNotifications),
   list,
   markRead,
   markAllRead,

@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Route, Routes } from "react-router-dom";
 import { ROLES } from "./utils/roles";
 import PublicRoute from "./routes/PublicRoute";
@@ -16,6 +17,11 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminTickets from "./pages/AdminTickets";
 import TicketDetail from "./pages/TicketDetail";
 import NotFound from "./pages/NotFound";
+import Notifications from "./pages/Notifications";
+import FullPageLoader from "./components/FullPageLoader";
+
+// The charts library is big and only admins open this page, so it is loaded when it is first needed.
+const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
 
 function App() {
   return (
@@ -34,16 +40,27 @@ function App() {
             <Route path="/customer/tickets" element={<CustomerTickets />} />
             <Route path="/customer/tickets/:id" element={<TicketDetail />} />
             <Route path="/customer/new-ticket" element={<NewTicket />} />
+            <Route path="/customer/notifications" element={<Notifications />} />
           </Route>
           <Route element={<RoleRoute allowedRoles={[ROLES.AGENT]} />}>
             <Route path="/agent" element={<AgentDashboard />} />
             <Route path="/agent/tickets" element={<AgentTickets />} />
             <Route path="/agent/tickets/:id" element={<TicketDetail />} />
+            <Route path="/agent/notifications" element={<Notifications />} />
           </Route>
           <Route element={<RoleRoute allowedRoles={[ROLES.ADMIN]} />}>
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/tickets" element={<AdminTickets />} />
             <Route path="/admin/tickets/:id" element={<TicketDetail />} />
+            <Route path="/admin/notifications" element={<Notifications />} />
+            <Route
+              path="/admin/analytics"
+              element={
+                <Suspense fallback={<FullPageLoader />}>
+                  <AdminAnalytics />
+                </Suspense>
+              }
+            />
           </Route>
         </Route>
       </Route>

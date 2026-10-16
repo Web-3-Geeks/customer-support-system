@@ -5,6 +5,10 @@ const {
   TICKET_CATEGORY,
 } = require("../utils/ticketRules");
 const { isValidDateParam, toRangeStart, toRangeEnd } = require("../utils/dateRange");
+const { MAX_PAGE } = require("../utils/pagination");
+
+// A control character (such as a null byte) has no place in a search and would crash the regular expression.
+const hasControlCharacter = (text) => [...text].some((character) => character.charCodeAt(0) < 32);
 
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid id");
 
@@ -83,8 +87,13 @@ const listTicketsSchema = z.object({
       sla: z.enum(["overdue", "at_risk"], { error: "sla must be overdue or at_risk" }).optional(),
       from: dateParam.optional(),
       to: dateParam.optional(),
-      q: z.string().trim().max(100, "Search text is too long").optional(),
-      page: z.coerce.number().int().min(1).default(1),
+      q: z
+        .string()
+        .trim()
+        .max(100, "Search text is too long")
+        .refine((text) => !hasControlCharacter(text), "Search text contains invalid characters")
+        .optional(),
+      page: z.coerce.number().int().min(1).max(MAX_PAGE).default(1),
       limit: z.coerce.number().int().min(1).max(50).default(10),
       sortBy: z.enum(["createdAt", "updatedAt", "ticketNumber"]).default("createdAt"),
       order: z.enum(["asc", "desc"]).default("desc"),

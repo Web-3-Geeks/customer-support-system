@@ -13,7 +13,7 @@ import {
 const controlClass =
   "rounded-xl border border-line bg-white px-3 py-2.5 text-sm text-ink focus:border-coral-500 focus:outline-none focus:ring-2 focus:ring-coral-500/20";
 
-function TicketFilters({ filters, onChange, onReset, agents }) {
+function TicketFilters({ filters, onChange, onReset, agents, showSla = false }) {
   const [search, setSearch] = useState(filters.q);
 
   useEffect(() => {
@@ -22,7 +22,7 @@ function TicketFilters({ filters, onChange, onReset, agents }) {
     return () => clearTimeout(timer);
   }, [search, filters.q, onChange]);
 
-  const hasActiveFilters = ["q", "status", "priority", "category", "assignedTo", "from", "to"].some(
+  const hasActiveFilters = ["q", "status", "priority", "category", "assignedTo", "sla", "from", "to"].some(
     (key) => filters[key] !== ""
   );
 
@@ -106,6 +106,19 @@ function TicketFilters({ filters, onChange, onReset, agents }) {
                 {agent.name}
               </option>
             ))}
+          </select>
+        )}
+
+        {showSla && (
+          <select
+            aria-label="Filter by SLA"
+            value={filters.sla}
+            onChange={(e) => onChange({ sla: e.target.value })}
+            className={controlClass}
+          >
+            <option value="">Any SLA state</option>
+            <option value="overdue">Overdue</option>
+            <option value="at_risk">At risk</option>
           </select>
         )}
 

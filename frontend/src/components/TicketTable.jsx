@@ -1,9 +1,17 @@
 import { Link } from "react-router-dom";
 import StatusBadge from "./StatusBadge";
 import PriorityBadge from "./PriorityBadge";
+import SlaBadge from "./SlaBadge";
 import { CATEGORY_LABELS, formatDate } from "../utils/tickets";
 
-function TicketTable({ tickets, basePath, showCustomer = false, renderAssignee, showAssignee = false }) {
+function TicketTable({
+  tickets,
+  basePath,
+  showCustomer = false,
+  renderAssignee,
+  showAssignee = false,
+  showSla = false,
+}) {
   return (
     <div className="overflow-x-auto rounded-2xl bg-white/90 shadow-sm ring-1 ring-black/5">
       <table className="w-full min-w-[720px] text-left text-sm">
@@ -14,6 +22,7 @@ function TicketTable({ tickets, basePath, showCustomer = false, renderAssignee, 
             {showCustomer && <th scope="col" className="px-5 py-3 font-semibold">Customer</th>}
             <th scope="col" className="px-5 py-3 font-semibold">Status</th>
             <th scope="col" className="px-5 py-3 font-semibold">Priority</th>
+            {showSla && <th scope="col" className="px-5 py-3 font-semibold">SLA</th>}
             {(showAssignee || renderAssignee) && (
               <th scope="col" className="px-5 py-3 font-semibold">Assigned to</th>
             )}
@@ -22,7 +31,12 @@ function TicketTable({ tickets, basePath, showCustomer = false, renderAssignee, 
         </thead>
         <tbody>
           {tickets.map((ticket) => (
-            <tr key={ticket._id} className="border-b border-line align-top last:border-0">
+            <tr
+              key={ticket._id}
+              className={`border-b border-line align-top last:border-0 ${
+                showSla && ticket.sla?.overdue ? "bg-red-50/60" : ""
+              }`}
+            >
               <td className="px-5 py-3">
                 <Link
                   to={`${basePath}/${ticket._id}`}
@@ -46,6 +60,15 @@ function TicketTable({ tickets, basePath, showCustomer = false, renderAssignee, 
               <td className="px-5 py-3">
                 <PriorityBadge priority={ticket.priority} />
               </td>
+              {showSla && (
+                <td className="px-5 py-3">
+                  {ticket.sla ? (
+                    <SlaBadge key={ticket.sla.serverTime} sla={ticket.sla} />
+                  ) : (
+                    <span className="text-muted">-</span>
+                  )}
+                </td>
+              )}
               {renderAssignee ? (
                 <td className="px-5 py-3">{renderAssignee(ticket)}</td>
               ) : (

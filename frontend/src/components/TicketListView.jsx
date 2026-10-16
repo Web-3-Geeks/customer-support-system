@@ -18,14 +18,16 @@ function TicketListView({
   emptyText,
   showCustomer = false,
   showAssignee = false,
+  showSla = false,
+  initialFilters,
   agents,
   renderAssignee,
 }) {
   usePageTitle(title);
   const { filters, tickets, pagination, loading, error, updateFilters, setPage, resetFilters, reload } =
-    useTicketList(fetchTickets);
+    useTicketList(fetchTickets, initialFilters);
 
-  const hasFilters = ["q", "status", "priority", "category", "assignedTo", "from", "to"].some(
+  const hasFilters = ["q", "status", "priority", "category", "assignedTo", "sla", "from", "to"].some(
     (key) => filters[key] !== ""
   );
 
@@ -33,7 +35,13 @@ function TicketListView({
     <>
       <PageHeader title={title} subtitle={subtitle} action={action} />
 
-      <TicketFilters filters={filters} onChange={updateFilters} onReset={resetFilters} agents={agents} />
+      <TicketFilters
+        filters={filters}
+        onChange={updateFilters}
+        onReset={resetFilters}
+        agents={agents}
+        showSla={showSla}
+      />
 
       {error ? (
         <div className="space-y-3">
@@ -59,6 +67,7 @@ function TicketListView({
             basePath={basePath}
             showCustomer={showCustomer}
             showAssignee={showAssignee}
+            showSla={showSla}
             renderAssignee={renderAssignee ? (ticket) => renderAssignee(ticket, reload) : undefined}
           />
           <Pagination pagination={pagination} onPageChange={setPage} />

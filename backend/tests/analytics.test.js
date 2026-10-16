@@ -212,6 +212,18 @@ describe("GET /api/admin/analytics/tickets", () => {
     expect(data.total).toBe(6);
   });
 
+  it("accepts a time zone in any letter case and answers with its official name", async () => {
+    await seed();
+
+    const lower = await get(users.admin.token, `tickets?${MARCH}&tz=asia/karachi`);
+    const utc = await get(users.admin.token, `tickets?${MARCH}&tz=utc`);
+
+    expect(lower.status).toBe(200);
+    expect(lower.body.data.timeZone).toBe("Asia/Karachi");
+    expect(utc.status).toBe(200);
+    expect(utc.body.data.timeZone).toBe("UTC");
+  });
+
   it("groups by week, starting on Monday", async () => {
     await seed();
 
