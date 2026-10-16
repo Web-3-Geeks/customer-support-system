@@ -1,0 +1,67 @@
+const { ROLES } = require("./constants");
+
+const TICKET_STATUS = {
+  OPEN: "OPEN",
+  IN_PROGRESS: "IN_PROGRESS",
+  WAITING_FOR_CUSTOMER: "WAITING_FOR_CUSTOMER",
+  RESOLVED: "RESOLVED",
+  CLOSED: "CLOSED",
+};
+
+const TICKET_PRIORITY = {
+  LOW: "LOW",
+  MEDIUM: "MEDIUM",
+  HIGH: "HIGH",
+  URGENT: "URGENT",
+};
+
+const TICKET_CATEGORY = {
+  GENERAL: "GENERAL",
+  BILLING: "BILLING",
+  TECHNICAL: "TECHNICAL",
+  ACCOUNT: "ACCOUNT",
+  OTHER: "OTHER",
+};
+
+const STATUS_TRANSITIONS = {
+  [TICKET_STATUS.OPEN]: {
+    [TICKET_STATUS.IN_PROGRESS]: [ROLES.AGENT, ROLES.ADMIN],
+    [TICKET_STATUS.CLOSED]: [ROLES.CUSTOMER, ROLES.ADMIN],
+  },
+  [TICKET_STATUS.IN_PROGRESS]: {
+    [TICKET_STATUS.WAITING_FOR_CUSTOMER]: [ROLES.AGENT, ROLES.ADMIN],
+    [TICKET_STATUS.RESOLVED]: [ROLES.AGENT, ROLES.ADMIN],
+  },
+  [TICKET_STATUS.WAITING_FOR_CUSTOMER]: {
+    [TICKET_STATUS.IN_PROGRESS]: [ROLES.AGENT, ROLES.ADMIN],
+    [TICKET_STATUS.RESOLVED]: [ROLES.AGENT, ROLES.ADMIN],
+  },
+  [TICKET_STATUS.RESOLVED]: {
+    [TICKET_STATUS.CLOSED]: [ROLES.CUSTOMER, ROLES.ADMIN],
+    [TICKET_STATUS.IN_PROGRESS]: [ROLES.AGENT, ROLES.ADMIN],
+  },
+  [TICKET_STATUS.CLOSED]: {},
+};
+
+const CUSTOMER_EDITABLE_STATUSES = [TICKET_STATUS.OPEN];
+
+const isValidTransition = (from, to) => Boolean(STATUS_TRANSITIONS[from]?.[to]);
+
+const canChangeStatus = (from, to, role) =>
+  STATUS_TRANSITIONS[from]?.[to]?.includes(role) ?? false;
+
+const getAllowedNextStatuses = (from, role) =>
+  Object.keys(STATUS_TRANSITIONS[from] ?? {}).filter((to) =>
+    STATUS_TRANSITIONS[from][to].includes(role)
+  );
+
+module.exports = {
+  TICKET_STATUS,
+  TICKET_PRIORITY,
+  TICKET_CATEGORY,
+  STATUS_TRANSITIONS,
+  CUSTOMER_EDITABLE_STATUSES,
+  isValidTransition,
+  canChangeStatus,
+  getAllowedNextStatuses,
+};
