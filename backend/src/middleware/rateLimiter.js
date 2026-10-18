@@ -42,4 +42,14 @@ const messageLimiter = createRateLimiter({
   skip: skipInTests,
 });
 
-module.exports = { createRateLimiter, loginLimiter, registerLimiter, messageLimiter };
+// Per logged-in user as well (this runs after protect). A customer rarely opens more than a few tickets in an hour;
+// without a limit one account could fill the database and flood every admin with notifications.
+const createTicketLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => String(req.user._id),
+  message: "You are creating tickets too fast. Please try again later.",
+  skip: skipInTests,
+});
+
+module.exports = { createRateLimiter, loginLimiter, registerLimiter, messageLimiter, createTicketLimiter };

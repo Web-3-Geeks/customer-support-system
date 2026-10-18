@@ -1,4 +1,5 @@
 const AppError = require("../utils/AppError");
+const logger = require("../utils/logger");
 
 const notFound = (req, res, next) => {
   next(new AppError(`Route not found: ${req.method} ${req.originalUrl}`, 404));
@@ -19,6 +20,17 @@ const errorHandler = (err, req, res, next) => {
     message = `${field} already exists`;
   }
 
+  // Raised by express.json: do not echo the parser's message, it only describes the attacker's own input.
+  if (err.type === "entity.parse.failed") {
+    statusCode = 400;
+    message = "Request body is not valid JSON";
+  }
+
+  if (err.type === "entity.too.large") {
+    statusCode = 413;
+    message = "Request body is too large";
+  }
+
   if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
     statusCode = 401;
     message = "Invalid or expired token";
@@ -28,7 +40,8 @@ const errorHandler = (err, req, res, next) => {
     message = "Something went wrong";
   }
 
-  if (statusCode === 500) console.error(err);
+  // The full error (with its stack) goes to the log, tied to the request by its id. The client only gets the message.
+  if (statusCode === 500) logger.error("unhandled error", { requestId: req.id, method: req.method, path: req.originalUrl.split("?")[0], err });
 
   res.status(statusCode).json({ success: false, message });
 };

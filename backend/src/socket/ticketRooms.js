@@ -2,6 +2,7 @@ const User = require("../models/User");
 const { findTicketForUser } = require("../services/ticketAccess");
 const { EVENTS } = require("./events");
 const { ticketRoom, isTicketRoom, toPerson } = require("./rooms");
+const { createEventLimiter } = require("./eventLimiter");
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 
@@ -41,8 +42,13 @@ const announceLeft = async (io, socket, room) => {
   });
 };
 
+const TOO_MANY = { ok: false, message: "Too many requests. Please slow down." };
+
 const registerTicketRoomHandlers = (io, socket) => {
+  const allowed = createEventLimiter();
+
   socket.on("join_ticket", async (payload, ack) => {
+    if (!allowed()) return reply(ack, TOO_MANY);
     try {
       const ticketId = readTicketId(payload);
       if (!ticketId) {
@@ -79,6 +85,7 @@ const registerTicketRoomHandlers = (io, socket) => {
   });
 
   socket.on("leave_ticket", async (payload, ack) => {
+    if (!allowed()) return reply(ack, TOO_MANY);
     try {
       const ticketId = readTicketId(payload);
       if (!ticketId) {

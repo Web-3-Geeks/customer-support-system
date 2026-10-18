@@ -2,6 +2,7 @@ const Ticket = require("../models/Ticket");
 const Counter = require("../models/Counter");
 const User = require("../models/User");
 const AppError = require("../utils/AppError");
+const logger = require("../utils/logger");
 const { ROLES } = require("../utils/constants");
 const { toRangeStart, toRangeEnd } = require("../utils/dateRange");
 const { scopeFor } = require("./ticketAccess");
@@ -44,7 +45,7 @@ const announce = async (actor, ticketId, text) => {
   try {
     await createSystemMessage(actor, ticketId, text);
   } catch (error) {
-    console.error(`Could not record system message: ${error.message}`);
+    logger.error("Could not record system message", { err: error });
   }
 };
 

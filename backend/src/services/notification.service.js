@@ -1,6 +1,7 @@
 const Notification = require("../models/Notification");
 const User = require("../models/User");
 const AppError = require("../utils/AppError");
+const logger = require("../utils/logger");
 const { ROLES } = require("../utils/constants");
 const { NOTIFICATION_TYPE } = require("../utils/notificationRules");
 const { TICKET_STATUS } = require("../utils/ticketRules");
@@ -38,7 +39,7 @@ const bestEffort = (name, fn) => async (...args) => {
   try {
     return await fn(...args);
   } catch (error) {
-    console.error(`Notification failed (${name}): ${error.message}`);
+    logger.error("Notification failed", { name, err: error });
     return null;
   }
 };

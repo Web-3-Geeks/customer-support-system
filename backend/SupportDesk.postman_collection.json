@@ -19,12 +19,12 @@
     {
       "key": "baseUrl",
       "value": "http://localhost:5000/api",
-      "description": "Local: http://localhost:5000/api. Production: https://customer-support-system-production.up.railway.app/api"
+      "description": "Local: http://localhost:5000/api. Production: https://customer-support-system-api-1qcu.onrender.com/api"
     },
     {
       "key": "serverUrl",
       "value": "http://localhost:5000",
-      "description": "Same host without /api, used for Socket.IO. Production: https://customer-support-system-production.up.railway.app"
+      "description": "Same host without /api, used for Socket.IO. Production: https://customer-support-system-api-1qcu.onrender.com"
     },
     {
       "key": "adminEmail",

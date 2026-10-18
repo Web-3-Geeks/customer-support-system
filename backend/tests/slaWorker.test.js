@@ -236,7 +236,7 @@ describe("running safely", () => {
   it("is not stopped by a notification that cannot be saved", async () => {
     const users = await setup();
     await makeTicket(users, 9);
-    jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(require("../src/utils/logger"), "error").mockImplementation(() => {});
     jest.spyOn(Notification, "insertMany").mockRejectedValueOnce(new Error("database hiccup"));
 
     const result = await runSlaCheck();

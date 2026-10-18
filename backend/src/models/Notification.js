@@ -54,8 +54,9 @@ const notificationSchema = new mongoose.Schema(
 );
 
 // The notification list and the unread count of one user.
-notificationSchema.index({ userId: 1, lastEventAt: -1 });
-notificationSchema.index({ userId: 1, isRead: 1, lastEventAt: -1 });
+// _id is the last key because the list sorts by lastEventAt and then _id.
+notificationSchema.index({ userId: 1, lastEventAt: -1, _id: -1 });
+notificationSchema.index({ userId: 1, isRead: 1, lastEventAt: -1, _id: -1 });
 
 // At most one unread reply notification per user and ticket. This is what lets concurrent replies
 // be merged safely with a single upsert instead of creating duplicates.

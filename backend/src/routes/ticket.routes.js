@@ -8,7 +8,7 @@ const {
 } = require("../controllers/ticket.controller");
 const { protect, authorize } = require("../middleware/auth");
 const validate = require("../middleware/validate");
-const { messageLimiter } = require("../middleware/rateLimiter");
+const { messageLimiter, createTicketLimiter } = require("../middleware/rateLimiter");
 const {
   createTicketSchema,
   ticketIdSchema,
@@ -32,7 +32,7 @@ const router = express.Router();
 
 router.use(protect);
 
-router.post("/", authorize(ROLES.CUSTOMER), validate(createTicketSchema), createTicket);
+router.post("/", authorize(ROLES.CUSTOMER), createTicketLimiter, validate(createTicketSchema), createTicket);
 router.get("/", validate(listTicketsSchema), listTickets);
 router.get("/:id", validate(ticketIdSchema), getTicket);
 router.patch("/:id", validate(updateTicketSchema), updateTicket);

@@ -211,5 +211,74 @@
 - [x] Audit (a11y, edge cases, security, indexes)
 - [x] Postman collection update (notifications + analytics)
 - [x] README Day 4 section (SLA rules, notification types, analytics definitions)
-- [ ] Deploy check (Railway worker + sockets, Vercel)
-- [ ] week7/Day4 snapshot + commits + push
+- [x] Deploy check (Railway worker + sockets, Vercel)
+- [x] week7/Day4 snapshot + commits + push
+
+# Week 7 - Day 5: Final integration, testing, security and deployment
+
+Goal: prove the whole product works end to end, close the remaining security and reliability gaps, and hand over a project that someone else can install, run and review. Nothing big is added; this day is about checking, fixing and documenting.
+
+## Where we start (checked against the code, not guessed)
+- Already there: 335 backend tests and 202 frontend tests, helmet, CORS, rate limits on login / register / messages, Zod validation everywhere, indexes for tickets / messages / notifications / SLA, message pagination, socket auth + room checks, a health endpoint, `backend/.env.example` and `frontend/.env.example`.
+- Gaps found: no rate limit on ticket creation; logging is `console.*` plus morgan only in development (no request ids, no production request log); no single test that walks the whole lifecycle; no screenshots; README has Railway steps (the backend now runs on Render); the root has no `.env.example` overview; the docs do not say how a fresh machine sets up the database.
+
+## Rules for the day
+- [x] Do not add features. Fix, test, document.
+- [x] Every fix gets a test that fails without it.
+- [x] Never log passwords, tokens or full request bodies.
+- [x] Production data is never touched by tests; live checks use throwaway users and clean up after themselves.
+
+## Task 1: End-to-end workflow validation
+- [x] One backend test that walks the full lifecycle in order: register, create ticket, admin assigns, agent notified, agent opens, both exchange messages, agent resolves, customer notified, response and resolution times show in analytics, admin reads ticket history and agent performance.
+- [ ] The same walk on the live site with the three roles (live script with cleanup, then a manual run by the user in three browsers).
+- [x] Frontend workflow tests for the three roles where they are not covered yet (customer: register to ticket to reply; agent: open assigned ticket to resolve; admin: assign to analytics).
+
+## Task 2: Automated tests (fill the gaps, not repeat)
+- [x] Map the Day 5 list (registration/login, RBAC, ownership, assignment, status transitions, messages, socket auth and rooms, notifications read/unread, SLA, analytics, pagination/filters, invalid input) to existing test files and list what is missing.
+- [x] Write the missing tests only.
+- [x] Add a coverage run (`jest --coverage`) and look at the weak spots.
+- [x] Record the final test results (counts, coverage) for the README.
+
+## Task 3: Security audit
+- [x] Route-by-route table of every endpoint: who may call it, and the test that proves a wrong caller is refused.
+- [x] Customer cannot see or touch another customer's ticket, message or notification; agent cannot change a ticket outside their scope (tests exist; re-check each route in the table).
+- [x] Socket events: validate every payload (bad ids, huge payloads, unknown events) and room membership; a bad event must not crash the server.
+- [x] Input: validation and sanitising on every body, query and param; check for NoSQL operator injection and regex abuse once more.
+- [x] Add a rate limit on ticket creation (and review the others).
+- [x] Errors and logs: no stack traces, no passwords, no tokens, no connection strings in responses or logs.
+- [x] Secrets only in environment variables; `.env` never tracked; run a scan of the git history for secrets.
+- [x] Indexes: confirm with `explain` that the main list, message, notification and analytics queries use an index.
+- [x] Pagination and filters cannot be abused (page and limit caps, date range caps, search length).
+- [ ] Change the default admin password and document how.
+
+## Task 4: Performance and reliability
+- [x] Check that no endpoint loads all tickets or all messages (lists are paged; analytics use aggregation).
+- [x] Socket reconnection and duplicate events: the client ignores an event it already applied (messages by id, notifications by id).
+- [x] Ticket change and its notification stay consistent (a failed notification never fails the change; a failed change creates no notification).
+- [x] Centralised logging: one small logger with levels and a request id, request log in production without bodies; replace the scattered `console.*`.
+- [x] Health endpoint also reports database state (connected or not) and the version; used by the hosting health check.
+- [x] Prove that an error inside one socket connection does not crash the server (test).
+- [x] Graceful shutdown (stop the SLA worker, close the server and the database).
+- [x] Frontend: check bundle size and the slowest screens; make sure lazy loading is used where it helps.
+
+## Task 5: Deployment and documentation
+- [ ] Production environment variables checked on Render and Vercel (CORS origin, JWT secret length, NODE_ENV).
+- [x] `.env.example` files complete and without secrets (backend, frontend); a short table of every variable in the README.
+- [x] Production build and start tested from a clean copy (`npm ci`, build, start).
+- [x] README rewritten for a stranger: what it is, roles, install, configure, database setup (there are no migrations; indexes are created on start; seed the admin), start commands, tests, deployment (Render, Vercel), the API table, WebSocket events, ticket lifecycle, SLA rules, known limitations.
+- [x] Screenshots of all three roles (login, customer tickets and conversation, agent ticket with SLA card, admin analytics, notifications) in `docs/screenshots/` and used in the README.
+- [x] Postman collection brought up to date with the Render URL.
+- [x] Purge the old Railway URL from the docs.
+- [x] Final list of known limitations (honest, short).
+
+## Closing
+- [x] Lint + build + tests (backend and frontend) all green; test results saved.
+- [ ] Final live run on Render + Vercel and the manual three-browser test by the user.
+- [ ] `week7/Day5` snapshot, `week7/README.md` index, final commits and push (the user pushes).
+- [ ] Submission pack: repository URL, live URLs, test results, screenshots, known limitations.
+
+## Order of work (proposal)
+1. Task 2 gap list + Task 3 route table (they find the bugs).
+2. Fix what they find (Tasks 3 and 4), each with a test.
+3. Task 1 lifecycle test, then live run.
+4. Task 5 docs and screenshots last, so they describe the final state.

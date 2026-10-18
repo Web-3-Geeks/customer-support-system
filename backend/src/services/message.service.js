@@ -1,5 +1,6 @@
 const TicketMessage = require("../models/TicketMessage");
 const AppError = require("../utils/AppError");
+const logger = require("../utils/logger");
 const { TICKET_STATUS } = require("../utils/ticketRules");
 const {
   MESSAGE_TYPE,
@@ -38,7 +39,7 @@ const trackFirstResponse = async (ticket, at) => {
   try {
     await recordFirstResponse(ticket, at);
   } catch (error) {
-    console.error(`Could not record first response: ${error.message}`);
+    logger.error("Could not record first response", { err: error });
   }
 };
 

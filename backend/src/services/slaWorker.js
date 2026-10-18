@@ -3,6 +3,7 @@ const { ACTIVE_STATUSES, SLA_CLOCK } = require("../utils/slaRules");
 const { notifySlaAlert } = require("./notification.service");
 
 // How often the worker looks for deadlines that are close or have passed.
+const logger = require("../utils/logger");
 const DEFAULT_INTERVAL_MS = 60 * 1000;
 
 // A safety limit for one run, so a long outage cannot turn into one endless loop.
@@ -90,10 +91,10 @@ const startSlaWorker = ({ intervalMs = Number(process.env.SLA_CHECK_INTERVAL_MS)
     try {
       const result = await runSlaCheck();
       if (result.atRisk || result.breached) {
-        console.log(`SLA check: ${result.atRisk} at risk, ${result.breached} breached`);
+        logger.info("SLA check", { atRisk: result.atRisk, breached: result.breached });
       }
     } catch (error) {
-      console.error(`SLA check failed: ${error.message}`);
+      logger.error("SLA check failed", { err: error });
     } finally {
       running = false;
     }

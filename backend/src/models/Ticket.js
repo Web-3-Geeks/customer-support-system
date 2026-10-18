@@ -76,10 +76,18 @@ const ticketSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-ticketSchema.index({ createdBy: 1, createdAt: -1 });
-ticketSchema.index({ assignedTo: 1, createdAt: -1 });
+// Every ticket list sorts by a field and then by _id (so pages never repeat or skip a ticket). An index can only
+// serve that sort if _id is its last key; without it MongoDB reads every matching ticket and sorts them in memory.
+// The list of one customer or one agent, the unassigned list (assignedTo: null) and the status filter:
+ticketSchema.index({ createdBy: 1, createdAt: -1, _id: -1 });
+ticketSchema.index({ assignedTo: 1, createdAt: -1, _id: -1 });
+ticketSchema.index({ status: 1, createdAt: -1, _id: -1 });
+// The admin's list of all tickets, in each of the three sort orders, and the date range filter:
+ticketSchema.index({ createdAt: -1, _id: -1 });
+ticketSchema.index({ updatedAt: -1, _id: -1 });
+ticketSchema.index({ ticketNumber: 1, _id: 1 });
+// Counts by status and priority.
 ticketSchema.index({ status: 1, priority: 1 });
-ticketSchema.index({ createdAt: -1 });
 // Overdue and at-risk searches, the SLA worker and the analytics all look for tickets with a clock still running.
 ticketSchema.index({ status: 1, firstResponseAt: 1, firstResponseDueAt: 1 });
 ticketSchema.index({ status: 1, resolvedAt: 1, resolutionDueAt: 1 });

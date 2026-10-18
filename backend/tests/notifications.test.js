@@ -2,6 +2,7 @@ const request = require("supertest");
 const mongoose = require("mongoose");
 const app = require("../src/app");
 const Notification = require("../src/models/Notification");
+const logger = require("../src/utils/logger");
 const { ROLES } = require("../src/utils/constants");
 const {
   createUserWithToken,
@@ -473,19 +474,19 @@ describe("access", () => {
 describe("reliability", () => {
   it("does not fail the request when a notification cannot be saved", async () => {
     const users = await setup();
-    jest.spyOn(console, "error").mockImplementation(() => {});
+    const logged = jest.spyOn(logger, "error").mockImplementation(() => {});
     jest.spyOn(Notification, "insertMany").mockRejectedValueOnce(new Error("database hiccup"));
 
     const created = await createTicketAs(users.customer.token);
 
     expect(created.status).toBe(201);
-    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("database hiccup"));
+    expect(logged).toHaveBeenCalledWith("Notification failed", expect.objectContaining({ err: expect.objectContaining({ message: "database hiccup" }) }));
   });
 
   it("does not fail a message when the reply notification cannot be saved", async () => {
     const users = await setup();
     const id = await assigned(users);
-    jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(logger, "error").mockImplementation(() => {});
     jest.spyOn(Notification, "findOneAndUpdate").mockRejectedValueOnce(new Error("database hiccup"));
 
     const res = await sendMessageAs(users.customer.token, id, "This message must still be saved");
