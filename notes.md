@@ -230,7 +230,8 @@ Goal: prove the whole product works end to end, close the remaining security and
 
 ## Task 1: End-to-end workflow validation
 - [x] One backend test that walks the full lifecycle in order: register, create ticket, admin assigns, agent notified, agent opens, both exchange messages, agent resolves, customer notified, response and resolution times show in analytics, admin reads ticket history and agent performance.
-- [ ] The same walk on the live site with the three roles (live script with cleanup, then a manual run by the user in three browsers).
+- [x] The same walk on the live site with a script (throwaway users, real sockets, cleanup): 52/52 checks, SLA alert delivered over the socket, database restored exactly.
+- [ ] The same walk by the user by hand in three browsers (admin, customer, agent).
 - [x] Frontend workflow tests for the three roles where they are not covered yet (customer: register to ticket to reply; agent: open assigned ticket to resolve; admin: assign to analytics).
 
 ## Task 2: Automated tests (fill the gaps, not repeat)
@@ -262,7 +263,7 @@ Goal: prove the whole product works end to end, close the remaining security and
 - [x] Frontend: check bundle size and the slowest screens; make sure lazy loading is used where it helps.
 
 ## Task 5: Deployment and documentation
-- [ ] Production environment variables checked on Render and Vercel (CORS origin, JWT secret length, NODE_ENV).
+- [x] Production environment variables checked on Render and Vercel (CORS origin and health verified live; the startup check passed, so the secret length and NODE_ENV are valid).
 - [x] `.env.example` files complete and without secrets (backend, frontend); a short table of every variable in the README.
 - [x] Production build and start tested from a clean copy (`npm ci`, build, start).
 - [x] README rewritten for a stranger: what it is, roles, install, configure, database setup (there are no migrations; indexes are created on start; seed the admin), start commands, tests, deployment (Render, Vercel), the API table, WebSocket events, ticket lifecycle, SLA rules, known limitations.
@@ -273,8 +274,9 @@ Goal: prove the whole product works end to end, close the remaining security and
 
 ## Closing
 - [x] Lint + build + tests (backend and frontend) all green; test results saved.
-- [ ] Final live run on Render + Vercel and the manual three-browser test by the user.
-- [ ] `week7/Day5` snapshot, `week7/README.md` index, final commits and push (the user pushes).
+- [x] Final live run on Render + Vercel (script).
+- [ ] Manual three-browser test by the user, UptimeRobot set up, admin password changed.
+- [x] `week7/Day5` snapshot, `week7/README.md` index, final commits and push (the user pushes).
 - [ ] Submission pack: repository URL, live URLs, test results, screenshots, known limitations.
 
 ## Order of work (proposal)
